@@ -1,6 +1,6 @@
 # Districts to Delegations — Model Explorer
 
-A standalone, single-page version of the interactive model from *Representation in District-Based Elections*.
+A standalone conference edition of the interactive model from *Representation in District-Based Elections*.
 
 The publication URL is configured as:
 
@@ -9,13 +9,16 @@ The publication URL is configured as:
 ## What is included
 
 - The complete Model explorer and its 270 bundled state-year election profiles
+- A House explorer that applies one shared `w` to separate state-level optima and aggregates the covered seats
 - Election diagnostics, first-switch weights, custom profiles, advanced specifications, and four interactive figures
 - A downloadable copy of the paper
 - In-page data, diagnostic, and methodology notes
 - Responsive and keyboard-accessible interactions
 - Local-only custom profile storage; no API, analytics service, login, or server-side database
 
-This repository intentionally contains only one visitor-facing HTML page: `index.html`. The former Paper, Methods, and State Lab pages are not part of this publication package.
+The visitor-facing navigation intentionally contains two pages: **State** (`index.html`) and **House** (`house.html`). The former Paper, Methods, and State Lab pages are not part of this publication package.
+
+The House page reports the supplied election panel, not a reconstructed official 435-seat House. It identifies covered and omitted seats directly; for 2024, the data cover 22 states and 343 seats. Its D:R support ratio is an equal-district two-party proxy because the source does not contain raw turnout totals.
 
 ## Run locally
 
@@ -35,7 +38,7 @@ Node.js 20 or newer is sufficient; there are no third-party package dependencies
 npm test
 ```
 
-The test suite checks the election data, diagnostics, model behavior, UI contracts, one-page publication structure, local asset availability, custom-domain metadata, and common credential patterns.
+The test suite checks the election data, diagnostics, state and House model behavior, UI contracts, two-page publication structure, local asset availability, custom-domain metadata, and common credential patterns.
 
 ## Publishing
 

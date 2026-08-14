@@ -1,6 +1,6 @@
 # Publish at `representation.yunusaybas.com`
 
-This guide publishes the static Model explorer with GitHub Pages while leaving the existing Squarespace site at `yunusaybas.com` and `www.yunusaybas.com` unchanged.
+This guide publishes the static State and House explorers with GitHub Pages while leaving the existing Squarespace site at `yunusaybas.com` and `www.yunusaybas.com` unchanged.
 
 Replace `GITHUB_OWNER` below with the GitHub username or organization that owns the repository. Do not include `https://`, a repository name, or a path in DNS values.
 
@@ -164,14 +164,15 @@ Verify all of the following:
 
 1. `yunusaybas.com` still opens the Squarespace site.
 2. `www.yunusaybas.com` still behaves as before.
-3. `representation.yunusaybas.com` opens the Model page directly.
-4. The browser shows a valid HTTPS certificate.
-5. State and year selectors update the map and diagnostics.
-6. Fine-tune/full-range controls and all four figures work.
-7. A copied query-string permalink opens the same state, year, weight, target, and map mode.
-8. Map and figure PNG downloads work.
-9. The paper PDF opens.
-10. There are no missing images, fonts, scripts, or mixed-content errors in the browser console.
+3. `representation.yunusaybas.com` opens the State explorer directly.
+4. The **State** and **House** menu links open `index.html` and `house.html`, with the current page identified.
+5. The browser shows a valid HTTPS certificate.
+6. State and year selectors update the map and diagnostics.
+7. Fine-tune/full-range controls and all four State figures work.
+8. A copied State query-string permalink opens the same state, year, weight, target, and map mode.
+9. The House year selector, weight slider, and previous/next composition controls update the covered panel and state table.
+10. Map and figure PNG downloads work and the paper PDF opens.
+11. There are no missing images, fonts, scripts, or mixed-content errors in the browser console.
 
 ## Step 10 — Publish future updates
 
@@ -179,7 +180,7 @@ Commit and push changes to `main`:
 
 ```sh
 git add -A
-git commit -m "Update Model explorer"
+git commit -m "Update State and House explorers"
 git push
 ```
 
