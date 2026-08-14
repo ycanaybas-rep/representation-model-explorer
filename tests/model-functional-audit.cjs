@@ -101,6 +101,21 @@ equal(
   "0.003250",
   "NC 2018 switch weight remains distinguishable in visible copy",
 );
+equal(
+  engine.formatWeightWithPercent(weight, schedule, best.demSeats),
+  "w = 0.003250 · 0.325%",
+  "workspace weight pairs the exact NC 2018 value with its compact percentage",
+);
+equal(
+  engine.formatWeightWithPercent(0.00753),
+  "w = 0.007530 · 0.753%",
+  "workspace weight preserves six-decimal precision while adding a percentage",
+);
+equal(
+  engine.formatWeightWithPercent(0.000886),
+  "w = 0.000886 · 0.089%",
+  "workspace weight uses the diagnostics percentage precision for small weights",
+);
 const counterfactual = engine.scoreAllocationOutcome(
   districts,
   frontier.find((candidate) => candidate.demSeats !== best.demSeats).assignment,
