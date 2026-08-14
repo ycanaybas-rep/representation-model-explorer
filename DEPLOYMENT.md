@@ -165,12 +165,12 @@ Verify all of the following:
 1. `yunusaybas.com` still opens the Squarespace site.
 2. `www.yunusaybas.com` still behaves as before.
 3. `representation.yunusaybas.com` opens the State explorer directly.
-4. The **State** and **House** menu links open `index.html` and `house.html`, with the current page identified.
+4. The **State** and **House** menu links open the bare site root and `house.html`, with the current page identified.
 5. The browser shows a valid HTTPS certificate.
 6. State and year selectors update the map and diagnostics.
 7. Fine-tune/full-range controls and all four State figures work.
 8. A copied State query-string permalink opens the same state, year, weight, target, and map mode.
-9. The House year selector, weight slider, and previous/next composition controls update the covered panel and state table.
+9. The House year selector, weight slider, chart, and previous/next composition controls update the semicircular covered-seat panel and its Democratic seat-share path.
 10. Map and figure PNG downloads work and the paper PDF opens.
 11. There are no missing images, fonts, scripts, or mixed-content errors in the browser console.
 

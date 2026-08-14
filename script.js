@@ -485,6 +485,7 @@ let inspectedDemSeats = null;
 let resultsCueTimer = null;
 let isEmbedMode = false;
 let explorerInitialized = false;
+let preserveCleanLandingUrl = false;
 let scenarioRestoreNotice = "";
 let guidedProgressStep = 1;
 let newsroomReturnFocus = null;
@@ -805,6 +806,10 @@ function initializeApp() {
   customState = loadCustomState();
   const restored =
     typeof window === "undefined" ? { found: false } : parseScenarioUrl(window.location.href);
+  preserveCleanLandingUrl =
+    typeof window !== "undefined" &&
+    !window.location.search &&
+    !new URLSearchParams(window.location.search).has("sv");
   scenarioRestoreNotice = restored.warning || "";
   isEmbedMode = Boolean(restored.embed);
   document.body.classList.toggle("embed-view", isEmbedMode);
@@ -4626,7 +4631,12 @@ function buildScenarioUrl({ embed = false, hash = null, baseUrl = null } = {}) {
 }
 
 function syncScenarioUrl() {
-  if (typeof window === "undefined" || !window.history?.replaceState || !activeModel) return;
+  if (
+    typeof window === "undefined" ||
+    preserveCleanLandingUrl ||
+    !window.history?.replaceState ||
+    !activeModel
+  ) return;
   try {
     const canonical = buildScenarioUrl({ embed: isEmbedMode, hash: window.location.hash });
     if (canonical !== window.location.href) window.history.replaceState(null, "", canonical);

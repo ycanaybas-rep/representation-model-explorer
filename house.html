@@ -8,7 +8,7 @@
     <title>House Explorer | Districts to Delegations</title>
     <meta
       name="description"
-      content="Apply one statewide-representation weight across every covered state and watch the modeled House panel, state delegations, and election diagnostics change."
+      content="Apply one statewide-representation weight across every covered state and watch the modeled House composition and Democratic seat-share path change."
     />
     <meta name="robots" content="index, follow" />
     <link rel="canonical" href="https://representation.yunusaybas.com/house.html" />
@@ -28,15 +28,15 @@
     <link rel="apple-touch-icon" href="apple-touch-icon-two-party-v2.png?v=20260728brand2" />
     <link rel="stylesheet" href="styles.css?v=20260804datasetvisual1" />
     <link rel="stylesheet" href="scholarly-ui.css?v=20260728surface1" />
-    <link rel="stylesheet" href="house.css?v=20260814housepublication1" />
-    <link rel="stylesheet" href="standalone.css?v=20260814housepublication1" />
+    <link rel="stylesheet" href="house.css?v=20260814housevisual2" />
+    <link rel="stylesheet" href="standalone.css?v=20260814housevisual2" />
   </head>
   <body data-page="house">
     <a class="skip-link" href="#mainContent">Skip to House Explorer</a>
 
     <header class="site-header">
       <div class="header-inner">
-        <a class="brand-lockup" href="index.html" aria-label="Districts to Delegations home">
+        <a class="brand-lockup" href="./" aria-label="Districts to Delegations home">
           <img class="brand-mark" src="assets/model-mark-two-party-v2.png?v=20260728brand2" width="42" height="42" alt="" />
           <div>
             <span class="brand-title">Districts to Delegations</span>
@@ -44,7 +44,7 @@
         </a>
 
         <nav class="primary-nav" aria-label="Primary navigation">
-          <a href="index.html">State</a>
+          <a href="./">State</a>
           <a href="house.html" aria-current="page">House</a>
         </nav>
       </div>
@@ -152,21 +152,33 @@
             class="house-chamber"
             role="img"
             aria-label="Loading the modeled House panel composition"
-          ></div>
-
-          <div
-            id="houseCompositionBar"
-            class="house-composition-bar"
-            role="img"
-            aria-label="Loading Democratic and Republican seat shares"
           >
-            <span id="houseDemBar" class="is-dem"></span>
-            <span id="houseRepBar" class="is-rep"></span>
+            <span class="house-chamber-dais" aria-hidden="true"></span>
           </div>
-          <div class="house-composition-legend" aria-hidden="true">
-            <span><i class="house-swatch is-dem"></i>Democratic</span>
-            <span><i class="house-swatch is-rep"></i>Republican</span>
+
+          <div class="house-vote-seat-band">
+            <div class="house-vote-share is-dem">
+              <span>Democratic vote</span>
+              <strong id="houseDemVoteShare">—</strong>
+            </div>
+            <div class="house-seat-bar-wrap">
+              <span>Covered two-party vote</span>
+              <div
+                id="houseCompositionBar"
+                class="house-composition-bar"
+                role="img"
+                aria-label="Loading Democratic and Republican vote shares"
+              >
+                <span id="houseDemBar" class="is-dem"></span>
+                <span id="houseRepBar" class="is-rep"></span>
+              </div>
+            </div>
+            <div class="house-vote-share is-rep">
+              <span>Republican vote</span>
+              <strong id="houseRepVoteShare">—</strong>
+            </div>
           </div>
+          <p class="house-vote-note">Two-party vote shares average the covered districts equally and remain fixed as <i>w</i> changes.</p>
 
           <div class="house-coverage-meter">
             <div>
@@ -181,98 +193,54 @@
         </article>
 
         <aside class="house-summary-cards" aria-label="House summary statistics">
-          <article class="house-summary-card house-support-card">
-            <div class="house-card-label">
-              <span>Popular-vote proxy</span>
-              <small>Fixed as w changes</small>
-            </div>
-            <h3>Equal-district two-party ratio</h3>
-            <strong id="houseSupportRatio">D:R —</strong>
-            <p id="houseSupportShares">Mean of normalized district shares; not turnout-weighted.</p>
-          </article>
-
           <article class="house-summary-card">
             <span>District-plurality baseline</span>
             <strong id="houseFptpSeats">—</strong>
-            <p id="houseNetChange">The model matches FPTP at w = 0.</p>
+            <p>Covered districts assigned to their local vote winner.</p>
           </article>
 
           <article class="house-summary-card">
-            <span>State-by-state proportional benchmark</span>
+            <span>Proportionality</span>
             <strong id="houseProportionalSeats">—</strong>
-            <p>Nearest whole-seat target in each covered state, then summed.</p>
+            <p>Nearest whole-seat proportional target in each state, then summed.</p>
           </article>
 
           <article class="house-summary-card">
-            <span>State delegations changed</span>
-            <strong id="houseStatesChanged">—</strong>
-            <p id="houseStatesChangedNote">Compared with district-plurality outcomes.</p>
+            <span>Changed districts</span>
+            <strong id="houseDistrictsChanged">—</strong>
+            <p id="houseDistrictsChangedNote">Compared with district-plurality winners.</p>
           </article>
         </aside>
       </section>
 
-      <section class="house-diagnostics" aria-labelledby="houseDiagnosticsTitle">
-        <header>
+      <section class="house-trajectory" aria-labelledby="houseTrajectoryTitle">
+        <header class="house-trajectory-heading">
           <div>
-            <span class="eyebrow">Allocation statistics</span>
-            <h2 id="houseDiagnosticsTitle">What changes with the composition</h2>
+            <span class="eyebrow">Across the full weight range</span>
+            <h2 id="houseTrajectoryTitle">Democratic share of covered House seats</h2>
           </div>
-          <a href="index.html#diagnosticDefinitions">Definitions and cautions</a>
+          <p id="houseTrajectoryReading">Loading the seat-share path…</p>
         </header>
-        <dl class="house-diagnostic-grid">
-          <div><dt>Democratic seat share</dt><dd id="houseSeatShare">—</dd></div>
-          <div><dt>Seat–support gap</dt><dd id="houseSeatVoteGap">—</dd></div>
-          <div><dt>Efficiency gap</dt><dd id="houseEfficiencyGap">—</dd></div>
-          <div><dt>Gallagher index</dt><dd id="houseGallagher">—</dd></div>
-          <div><dt>Local plurality winners retained</dt><dd id="housePluralityRetained">—</dd></div>
-          <div><dt>Panel majority inversion</dt><dd id="houseMajorityInversion">—</dd></div>
-        </dl>
-        <p class="house-diagnostic-note">
-          These aggregate diagnostics treat every covered district equally. They describe the modeled
-          panel at the selected weight and are not findings of intent, legality, or causation.
-        </p>
-      </section>
-
-      <section class="house-state-breakdown" aria-labelledby="houseStateBreakdownTitle">
-        <header>
-          <div>
-            <span class="eyebrow">State-by-state results</span>
-            <h2 id="houseStateBreakdownTitle">Where the House total comes from</h2>
-          </div>
-          <p id="houseStateBreakdownNote">Each row uses the same w and a separate state-level optimization.</p>
-        </header>
-        <div class="house-table-scroll" tabindex="0" role="region" aria-label="Scrollable state delegation table">
-          <table class="house-state-table">
-            <thead>
-              <tr>
-                <th scope="col">State</th>
-                <th scope="col">Equal-district support</th>
-                <th scope="col">FPTP</th>
-                <th scope="col">Model at w</th>
-                <th scope="col">Change</th>
-              </tr>
-            </thead>
-            <tbody id="houseStateRows"></tbody>
-          </table>
+        <div
+          class="house-chart-scroll"
+          tabindex="0"
+          role="region"
+          aria-labelledby="houseTrajectoryTitle"
+          aria-describedby="houseTrajectoryDescription"
+        >
+          <svg
+            id="houseSeatShareChart"
+            class="house-seat-share-chart"
+            viewBox="0 0 960 440"
+            role="img"
+            aria-labelledby="houseTrajectorySvgTitle houseTrajectoryDescription"
+          >
+            <title id="houseTrajectorySvgTitle">Democratic share of covered House seats by statewide weight</title>
+            <desc id="houseTrajectoryDescription">The step line shows the modeled Democratic seat share from w equals zero through one. A marker identifies the selected weight.</desc>
+          </svg>
         </div>
+        <p class="house-chart-cue" aria-hidden="true">Swipe horizontally to inspect the full chart</p>
       </section>
-
-      <details class="house-method-note">
-        <summary>What this page does—and does not—measure</summary>
-        <div>
-          <p>
-            The page does not optimize all U.S. districts as one national election. It applies the
-            selected weight within each available state election and sums those independently chosen
-            delegations. States and seats absent from the supplied panel remain unassigned.
-          </p>
-          <p>
-            The source contains normalized Democratic and Republican district vote shares, not raw vote
-            totals. The displayed D:R ratio is therefore the equal-district mean used by the model, not a
-            turnout-weighted national popular vote. See <a href="index.html#dataNotes">Data construction</a>
-            for coverage, normalization, and proxy rules.
-          </p>
-        </div>
-      </details>
     </main>
 
     <footer class="site-footer">
@@ -288,9 +256,9 @@
       </div>
     </footer>
 
-    <script src="site.js?v=20260814housepublication1" defer></script>
+    <script src="site.js?v=20260814housevisual2" defer></script>
     <script src="election-data.js?v=20260804dataset1" defer></script>
-    <script src="script.js?v=20260814housepublication1" defer></script>
-    <script src="house.js?v=20260814housepublication1" defer></script>
+    <script src="script.js?v=20260814housevisual2" defer></script>
+    <script src="house.js?v=20260814housevisual2" defer></script>
   </body>
 </html>

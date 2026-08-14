@@ -18,7 +18,7 @@ The publication URL is configured as:
 
 The visitor-facing navigation intentionally contains two pages: **State** (`index.html`) and **House** (`house.html`). The former Paper, Methods, and State Lab pages are not part of this publication package.
 
-The House page reports the supplied election panel, not a reconstructed official 435-seat House. It identifies covered and omitted seats directly; for 2024, the data cover 22 states and 343 seats. Its D:R support ratio is an equal-district two-party proxy because the source does not contain raw turnout totals.
+The House page reports the supplied election panel, not a reconstructed official 435-seat House. It identifies covered and omitted seats directly; for 2024, the data cover 22 states and 343 seats. Democratic and Republican vote shares are equal-district two-party averages because the source does not contain raw turnout totals. The House chart traces the exact aggregate state-by-state optimum across the full `w` range.
 
 ## Run locally
 

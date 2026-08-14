@@ -5,6 +5,12 @@
   const DEFAULT_WEIGHT = 0;
   const SWITCH_TOLERANCE = 1e-10;
   const CHAMBER_ROWS = 12;
+  const SVG_NAMESPACE = "http://www.w3.org/2000/svg";
+  const HOUSE_CHART_VIEWBOX = Object.freeze({
+    width: 960,
+    height: 440,
+    margin: Object.freeze({ top: 30, right: 32, bottom: 68, left: 86 }),
+  });
 
   function clampWeight(value) {
     const numeric = Number(value);
@@ -37,6 +43,11 @@
         );
         const election = engine.getElectionRecord(name, numericYear);
         const quality = engine.getElectionQualityCounts(election);
+        const calculatedSchedule = engine.computeSwitchSchedule(
+          frontier,
+          metrics,
+          compilation.compiled,
+        );
         return {
           name,
           code: config.code,
@@ -45,7 +56,7 @@
           frontier,
           election,
           quality,
-          switchWeights: (election?.switchWeights || []).slice(),
+          switches: calculatedSchedule.switches.map((item) => ({ ...item })),
         };
       })
       .sort((first, second) => first.name.localeCompare(second.name));
@@ -90,11 +101,13 @@
       const demDirection = Math.sign(
         state.metrics.proportionalDemSeats - state.metrics.demSeats,
       );
-      return state.switchWeights.map((weight) => ({
-        weight: Number(weight),
+      return state.switches.map((item) => ({
+        weight: Number(item.weight),
         state: state.name,
         code: state.code,
-        demDelta: demDirection,
+        fromDemSeats: item.fromDemSeats,
+        toDemSeats: item.toDemSeats,
+        demDelta: Number(item.toDemSeats) - Number(item.fromDemSeats) || demDirection,
       }));
     });
 
@@ -202,6 +215,100 @@
     return counts;
   }
 
+  function buildChamberSeatLayout(total, rowCount = CHAMBER_ROWS) {
+    const counts = distributeSeats(total, rowCount);
+    const lastRow = Math.max(1, counts.length - 1);
+    return counts.flatMap((count, rowIndex) => {
+      const progress = rowIndex / lastRow;
+      const radiusX = 16 + progress * 30;
+      const radiusY = radiusX * 1.9;
+      return Array.from({ length: count }, (_, column) => {
+        const angle = (Math.PI * (column + 1)) / (count + 1);
+        return {
+          x: 50 + radiusX * Math.cos(angle),
+          y: 96 - radiusY * Math.sin(angle),
+          rowIndex,
+          column,
+        };
+      });
+    });
+  }
+
+  function buildHouseSeatShareSeries(yearModel) {
+    const eventGroups = yearModel.switchGroups.filter(
+      (group) => Number.isFinite(group.weight) && group.weight > 0 && group.weight < 1,
+    );
+    const boundaries = [0, ...eventGroups.map((group) => group.weight), 1];
+    const regimes = boundaries.slice(0, -1).map((start, index) => {
+      const end = boundaries[index + 1];
+      const sampleWeight = index === 0 ? 0 : (start + end) / 2;
+      const snapshot = computeHouseSnapshot(yearModel, sampleWeight);
+      return {
+        start,
+        end,
+        sampleWeight,
+        demSeats: snapshot.demSeats,
+        demSeatShare: snapshot.demSeatShare,
+      };
+    });
+    const events = eventGroups.map((group, index) => {
+      const exact = computeHouseSnapshot(yearModel, group.weight);
+      return {
+        weight: group.weight,
+        states: group.states.map((item) => ({ ...item })),
+        beforeDemSeats: regimes[index].demSeats,
+        exactDemSeats: exact.demSeats,
+        afterDemSeats: regimes[index + 1].demSeats,
+      };
+    });
+    const endpoint = computeHouseSnapshot(yearModel, 1);
+    const vertices = [
+      { weight: 0, demSeatShare: regimes[0].demSeatShare },
+      ...events.flatMap((event, index) => [
+        { weight: event.weight, demSeatShare: regimes[index].demSeatShare },
+        { weight: event.weight, demSeatShare: regimes[index + 1].demSeatShare },
+      ]),
+      { weight: 1, demSeatShare: regimes.at(-1).demSeatShare },
+    ];
+    if (Math.abs(endpoint.demSeatShare - vertices.at(-1).demSeatShare) > 1e-12) {
+      vertices.push({ weight: 1, demSeatShare: endpoint.demSeatShare });
+    }
+    const shares = [
+      ...regimes.map((regime) => regime.demSeatShare),
+      ...events.map((event) => event.exactDemSeats / yearModel.totalSeats),
+      endpoint.demSeatShare,
+    ];
+    return {
+      totalSeats: yearModel.totalSeats,
+      regimes,
+      events,
+      vertices,
+      endpoint: {
+        demSeats: endpoint.demSeats,
+        demSeatShare: endpoint.demSeatShare,
+      },
+      minDemSeats: Math.min(...shares.map((share) => Math.round(share * yearModel.totalSeats))),
+      maxDemSeats: Math.max(...shares.map((share) => Math.round(share * yearModel.totalSeats))),
+      minDemSeatShare: Math.min(...shares),
+      maxDemSeatShare: Math.max(...shares),
+    };
+  }
+
+  function getSeatShareChartDomain(series) {
+    const dataMinimum = series.minDemSeatShare;
+    const dataMaximum = series.maxDemSeatShare;
+    const range = dataMaximum - dataMinimum;
+    const padding = Math.max(0.01, range * 0.14);
+    let minimum = Math.max(0, Math.floor((dataMinimum - padding) * 100) / 100);
+    let maximum = Math.min(1, Math.ceil((dataMaximum + padding) * 100) / 100);
+    if (maximum - minimum < 0.04) {
+      const midpoint = (minimum + maximum) / 2;
+      minimum = Math.max(0, Math.floor((midpoint - 0.02) * 100) / 100);
+      maximum = Math.min(1, Math.ceil((midpoint + 0.02) * 100) / 100);
+    }
+    return { min: minimum, max: maximum };
+  }
+
   function getAdjacentCompositionWeight(groups, weight, direction) {
     const w = clampWeight(weight);
     if (!groups.length) return direction > 0 ? 1 : 0;
@@ -226,29 +333,12 @@
     return clampWeight((lower + upper) / 2);
   }
 
-  function formatSupportRatio(demSupport) {
-    const dem = clampWeight(demSupport);
-    const rep = 1 - dem;
-    if (rep <= 1e-12) return "D:R all D";
-    if (dem <= 1e-12) return "D:R all R";
-    const quotient = dem / rep;
-    return quotient >= 1
-      ? `D:R ${quotient.toFixed(3)}:1`
-      : `D:R 1:${(1 / quotient).toFixed(3)}`;
-  }
-
   function formatComposition(demSeats, totalSeats) {
     return `${demSeats} D / ${totalSeats - demSeats} R`;
   }
 
   function formatPercent(value, digits = 1) {
     return `${(Number(value) * 100).toFixed(digits)}%`;
-  }
-
-  function formatDirectionalPoints(value, positiveParty = "D") {
-    if (Math.abs(value) < 0.0005) return "Even";
-    const negativeParty = positiveParty === "D" ? "R" : "D";
-    return `${value > 0 ? positiveParty : negativeParty} +${(Math.abs(value) * 100).toFixed(1)} pts`;
   }
 
   function formatWeight(value, engine = null) {
@@ -261,9 +351,12 @@
     return w.toFixed(digits);
   }
 
-  function describeSeatChange(delta) {
-    if (!delta) return "No change";
-    return `${delta > 0 ? "D" : "R"} +${Math.abs(delta)}`;
+  function createSvgElement(tagName, attributes = {}) {
+    const element = document.createElementNS(SVG_NAMESPACE, tagName);
+    Object.entries(attributes).forEach(([name, value]) => {
+      element.setAttribute(name, String(value));
+    });
+    return element;
   }
 
   function initializeHousePage() {
@@ -292,21 +385,15 @@
       "houseCoverageValue",
       "houseCoverageBar",
       "houseUncoveredSeats",
-      "houseSupportRatio",
-      "houseSupportShares",
+      "houseDemVoteShare",
+      "houseRepVoteShare",
       "houseFptpSeats",
-      "houseNetChange",
       "houseProportionalSeats",
-      "houseStatesChanged",
-      "houseStatesChangedNote",
-      "houseSeatShare",
-      "houseSeatVoteGap",
-      "houseEfficiencyGap",
-      "houseGallagher",
-      "housePluralityRetained",
-      "houseMajorityInversion",
-      "houseStateRows",
-      "houseStateBreakdownNote",
+      "houseDistrictsChanged",
+      "houseDistrictsChangedNote",
+      "houseSeatShareChart",
+      "houseTrajectoryDescription",
+      "houseTrajectoryReading",
     ];
     const elements = Object.fromEntries(
       ids.map((id) => {
@@ -320,9 +407,12 @@
     const initial = readInitialState(years);
     let activeYearModel = null;
     let activeSnapshot = null;
+    let activeSeatShareSeries = null;
+    let activeChartDomain = null;
     let chamberSeats = [];
     let renderFrame = 0;
     let lastCompositionKey = "";
+    const preserveCleanPageUrl = !window.location.search;
 
     elements.houseYearSelect.replaceChildren(
       ...years
@@ -353,6 +443,7 @@
     elements.houseNextComposition.addEventListener("click", () => {
       moveToComposition(1);
     });
+    elements.houseSeatShareChart.addEventListener("click", handleChartClick);
 
     loadYear(initial.year);
 
@@ -387,8 +478,14 @@
       elements.houseCoverageValue.textContent = `${model.totalSeats} of ${FULL_HOUSE_SEATS} seats`;
       elements.houseCoverageBar.style.width = `${(model.totalSeats / FULL_HOUSE_SEATS) * 100}%`;
       elements.houseUncoveredSeats.textContent = `${model.uncoveredSeats} seats are outside this year’s panel and remain unassigned here.`;
-      elements.houseSupportRatio.textContent = formatSupportRatio(model.demSupport);
-      elements.houseSupportShares.textContent = `D ${formatPercent(model.demSupport, 1)} · R ${formatPercent(model.repSupport, 1)}. Equal-district support; not turnout-weighted.`;
+      elements.houseDemVoteShare.textContent = formatPercent(model.demSupport, 1);
+      elements.houseRepVoteShare.textContent = formatPercent(model.repSupport, 1);
+      elements.houseCompositionBar.setAttribute(
+        "aria-label",
+        `Covered-district two-party vote shares: Democratic ${formatPercent(model.demSupport, 1)}, Republican ${formatPercent(model.repSupport, 1)}`,
+      );
+      elements.houseDemBar.style.width = `${model.demSupport * 100}%`;
+      elements.houseRepBar.style.width = `${model.repSupport * 100}%`;
       elements.houseFptpSeats.textContent = formatComposition(
         model.fptpDemSeats,
         model.totalSeats,
@@ -397,13 +494,11 @@
         model.proportionalDemSeats,
         model.totalSeats,
       );
-      elements.houseStateBreakdownNote.textContent = `${model.proxyCount} district shares use a source proxy${
-        model.largeThirdPartyCount
-          ? `; ${model.largeThirdPartyCount} also carry the large-third-party flag`
-          : ""
-      }. Each row is optimized separately.`;
       renderSwitchMarkers(model.switchGroups);
       chamberSeats = renderChamberStructure(model.totalSeats);
+      activeSeatShareSeries = buildHouseSeatShareSeries(model);
+      activeChartDomain = getSeatShareChartDomain(activeSeatShareSeries);
+      renderSeatShareChart(activeSeatShareSeries, activeChartDomain);
       lastCompositionKey = "";
     }
 
@@ -419,30 +514,203 @@
     }
 
     function renderChamberStructure(totalSeats) {
-      const seatEntries = [];
-      const rows = distributeSeats(totalSeats);
-      const rowElements = rows.map((count, rowIndex) => {
-        const row = document.createElement("div");
-        row.className = "house-seat-row";
-        for (let column = 0; column < count; column += 1) {
-          const seat = document.createElement("i");
-          seat.className = "house-seat";
-          seat.setAttribute("aria-hidden", "true");
-          row.append(seat);
-          const horizontal = count === 1 ? 0 : (column / (count - 1)) * 2 - 1;
-          seatEntries.push({ seat, horizontal, rowIndex, column });
-        }
-        return row;
+      const dais = elements.houseChamberSeats.querySelector(".house-chamber-dais");
+      const seatEntries = buildChamberSeatLayout(totalSeats).map((position) => {
+        const seat = document.createElement("i");
+        seat.className = "house-seat";
+        seat.setAttribute("aria-hidden", "true");
+        seat.style.left = `${position.x}%`;
+        seat.style.top = `${position.y}%`;
+        return { seat, ...position };
       });
-      elements.houseChamberSeats.replaceChildren(...rowElements);
+      elements.houseChamberSeats.replaceChildren(
+        ...(dais ? [dais] : []),
+        ...seatEntries.map((entry) => entry.seat),
+      );
       return seatEntries
         .sort(
           (first, second) =>
-            first.horizontal - second.horizontal ||
+            first.x - second.x ||
             second.rowIndex - first.rowIndex ||
             first.column - second.column,
         )
         .map((entry) => entry.seat);
+    }
+
+    function renderSeatShareChart(series, domain) {
+      const svg = elements.houseSeatShareChart;
+      const { width, height, margin } = HOUSE_CHART_VIEWBOX;
+      const plotWidth = width - margin.left - margin.right;
+      const plotHeight = height - margin.top - margin.bottom;
+      const x = (weight) => margin.left + clampWeight(weight) * plotWidth;
+      const y = (share) =>
+        margin.top + ((domain.max - share) / (domain.max - domain.min)) * plotHeight;
+      const title = svg.querySelector("title") || createSvgElement("title");
+      title.id = "houseTrajectorySvgTitle";
+      title.textContent = `Democratic share of ${series.totalSeats} covered House seats by statewide weight`;
+      const description = elements.houseTrajectoryDescription;
+      const rangeText = `${formatPercent(series.minDemSeatShare, 1)} to ${formatPercent(series.maxDemSeatShare, 1)}`;
+      description.textContent = `Focused vertical scale. The step line shows the modeled Democratic share of ${series.totalSeats} covered House seats as w changes from zero to one. There are ${series.events.length} switching points and the share ranges from ${rangeText}.`;
+
+      const grid = createSvgElement("g", { class: "house-chart-grid" });
+      const yTicks = Array.from({ length: 5 }, (_, index) =>
+        domain.min + ((domain.max - domain.min) * index) / 4,
+      );
+      yTicks.forEach((tick) => {
+        const position = y(tick);
+        grid.append(
+          createSvgElement("line", {
+            x1: margin.left,
+            x2: width - margin.right,
+            y1: position,
+            y2: position,
+          }),
+        );
+        const label = createSvgElement("text", {
+          x: margin.left - 14,
+          y: position,
+          class: "house-chart-tick-label house-chart-y-tick",
+        });
+        label.textContent = formatPercent(tick, 1);
+        grid.append(label);
+      });
+
+      if (domain.min <= 0.5 && domain.max >= 0.5) {
+        const majority = createSvgElement("g", { class: "house-chart-majority" });
+        majority.append(
+          createSvgElement("line", {
+            x1: margin.left,
+            x2: width - margin.right,
+            y1: y(0.5),
+            y2: y(0.5),
+          }),
+        );
+        const label = createSvgElement("text", {
+          x: width - margin.right - 4,
+          y: y(0.5) - 8,
+        });
+        label.textContent = "50% majority";
+        majority.append(label);
+        grid.append(majority);
+      }
+
+      const axes = createSvgElement("g", { class: "house-chart-axes" });
+      axes.append(
+        createSvgElement("line", {
+          x1: margin.left,
+          x2: width - margin.right,
+          y1: height - margin.bottom,
+          y2: height - margin.bottom,
+        }),
+      );
+      [0, 0.25, 0.5, 0.75, 1].forEach((tick) => {
+        const position = x(tick);
+        axes.append(
+          createSvgElement("line", {
+            x1: position,
+            x2: position,
+            y1: height - margin.bottom,
+            y2: height - margin.bottom + 7,
+          }),
+        );
+        const label = createSvgElement("text", {
+          x: position,
+          y: height - margin.bottom + 27,
+          class: "house-chart-tick-label house-chart-x-tick",
+        });
+        label.textContent = tick.toFixed(tick === 0 || tick === 1 ? 0 : 2);
+        axes.append(label);
+      });
+
+      const xLabel = createSvgElement("text", {
+        x: margin.left + plotWidth / 2,
+        y: height - 14,
+        class: "house-chart-axis-title house-chart-x-title",
+      });
+      xLabel.textContent = "Statewide weight w";
+      const yLabel = createSvgElement("text", {
+        x: 18,
+        y: margin.top + plotHeight / 2,
+        class: "house-chart-axis-title house-chart-y-title",
+        transform: `rotate(-90 18 ${margin.top + plotHeight / 2})`,
+      });
+      yLabel.textContent = "Democratic share of covered seats";
+      axes.append(xLabel, yLabel);
+
+      const pathData = series.vertices
+        .map((vertex, index) => `${index ? "L" : "M"}${x(vertex.weight).toFixed(2)},${y(vertex.demSeatShare).toFixed(2)}`)
+        .join(" ");
+      const path = createSvgElement("path", {
+        class: "house-chart-path",
+        d: pathData,
+      });
+      const eventPoints = createSvgElement("g", {
+        class: "house-chart-events",
+        "aria-hidden": "true",
+      });
+      series.events.forEach((event) => {
+        eventPoints.append(
+          createSvgElement("circle", {
+            cx: x(event.weight),
+            cy: y(event.exactDemSeats / series.totalSeats),
+            r: 2.8,
+          }),
+        );
+      });
+      const currentGuide = createSvgElement("line", {
+        id: "houseChartCurrentGuide",
+        class: "house-chart-current-guide",
+        y1: margin.top,
+        y2: height - margin.bottom,
+      });
+      const currentPoint = createSvgElement("circle", {
+        id: "houseChartCurrentPoint",
+        class: "house-chart-current-point",
+        r: 7,
+      });
+
+      svg.dataset.plotLeft = String(margin.left);
+      svg.dataset.plotRight = String(width - margin.right);
+      svg.dataset.yMin = String(domain.min);
+      svg.dataset.yMax = String(domain.max);
+      svg.replaceChildren(title, description, grid, axes, path, eventPoints, currentGuide, currentPoint);
+    }
+
+    function updateCurrentChartMarker(snapshot) {
+      if (!activeChartDomain) return;
+      const { width, height, margin } = HOUSE_CHART_VIEWBOX;
+      const plotWidth = width - margin.left - margin.right;
+      const plotHeight = height - margin.top - margin.bottom;
+      const x = margin.left + snapshot.weight * plotWidth;
+      const y =
+        margin.top +
+        ((activeChartDomain.max - snapshot.demSeatShare) /
+          (activeChartDomain.max - activeChartDomain.min)) *
+          plotHeight;
+      const guide = elements.houseSeatShareChart.querySelector("#houseChartCurrentGuide");
+      const point = elements.houseSeatShareChart.querySelector("#houseChartCurrentPoint");
+      guide?.setAttribute("x1", String(x));
+      guide?.setAttribute("x2", String(x));
+      point?.setAttribute("cx", String(x));
+      point?.setAttribute("cy", String(y));
+      elements.houseTrajectoryReading.textContent = `At w = ${formatWeight(snapshot.weight, engine)}, Democrats hold ${snapshot.demSeats} of ${snapshot.totalSeats} covered seats (${formatPercent(snapshot.demSeatShare, 1)}).`;
+      elements.houseSeatShareChart.setAttribute(
+        "aria-label",
+        `Democratic share of ${snapshot.totalSeats} covered House seats across w. At w ${formatWeight(snapshot.weight, engine)}, Democrats hold ${snapshot.demSeats} seats, ${formatPercent(snapshot.demSeatShare, 1)}. The chart uses a focused vertical scale from ${formatPercent(activeChartDomain.min, 1)} to ${formatPercent(activeChartDomain.max, 1)}.`,
+      );
+    }
+
+    function handleChartClick(event) {
+      const bounds = elements.houseSeatShareChart.getBoundingClientRect();
+      if (!bounds.width) return;
+      const viewboxX = ((event.clientX - bounds.left) / bounds.width) * HOUSE_CHART_VIEWBOX.width;
+      const { margin, width } = HOUSE_CHART_VIEWBOX;
+      const weight = clampWeight(
+        (viewboxX - margin.left) / (width - margin.left - margin.right),
+      );
+      elements.houseWeight.value = String(weight);
+      renderCurrentWeight(true);
+      elements.houseWeight.focus({ preventScroll: true });
     }
 
     function renderCurrentWeight(force = false) {
@@ -463,11 +731,11 @@
       renderWeightReading(activeSnapshot);
       renderSwitchReading(activeSnapshot.weight);
       updateUrl(activeSnapshot.year, activeSnapshot.weight);
+      updateCurrentChartMarker(activeSnapshot);
 
       if (!force && compositionKey === lastCompositionKey) return;
       lastCompositionKey = compositionKey;
       renderComposition(activeSnapshot);
-      renderStateRows(activeSnapshot.stateResults);
     }
 
     function renderWeightReading(snapshot) {
@@ -514,79 +782,13 @@
         "aria-label",
         `${snapshot.demSeats} Democratic and ${snapshot.repSeats} Republican seats among ${snapshot.totalSeats} covered House districts. Seats are arranged for composition only, not geography.`,
       );
-      elements.houseCompositionBar.setAttribute(
-        "aria-label",
-        `Modeled panel seat shares: Democratic ${formatPercent(snapshot.demSeatShare, 1)}, Republican ${formatPercent(snapshot.repSeatShare, 1)}`,
-      );
-      elements.houseDemBar.style.width = `${snapshot.demSeatShare * 100}%`;
-      elements.houseRepBar.style.width = `${snapshot.repSeatShare * 100}%`;
       chamberSeats.forEach((seat, index) => {
         seat.classList.toggle("is-dem", index < snapshot.demSeats);
         seat.classList.toggle("is-rep", index >= snapshot.demSeats);
       });
 
-      const netDemChange = snapshot.demSeats - activeYearModel.fptpDemSeats;
-      elements.houseNetChange.textContent = netDemChange
-        ? `${netDemChange > 0 ? "D" : "R"} gains ${Math.abs(netDemChange)} modeled ${Math.abs(netDemChange) === 1 ? "seat" : "seats"} relative to FPTP.`
-        : "No net seat change from the district-plurality baseline.";
-      elements.houseStatesChanged.textContent = `${snapshot.changedStates} of ${activeYearModel.stateCount}`;
-      elements.houseStatesChangedNote.textContent = `${activeYearModel.stateCount - snapshot.changedStates} state delegations still match their FPTP seat totals.`;
-      elements.houseSeatShare.textContent = `D ${formatPercent(snapshot.demSeatShare, 1)}`;
-      elements.houseSeatVoteGap.textContent = formatDirectionalPoints(snapshot.seatSupportGap, "D");
-      elements.houseEfficiencyGap.textContent = formatDirectionalPoints(snapshot.efficiencyGap, "D");
-      elements.houseGallagher.textContent = formatPercent(snapshot.gallagherIndex, 1);
-      elements.housePluralityRetained.textContent = `${snapshot.pluralityRetained} of ${snapshot.totalSeats}`;
-      elements.houseMajorityInversion.textContent = formatMajorityInversion(snapshot);
-    }
-
-    function formatMajorityInversion(snapshot) {
-      if (snapshot.majorityInversion === null) return "Not applicable · tied support";
-      if (!snapshot.majorityInversion) return "No";
-      const supportWinner = snapshot.demSupport > 0.5 ? "D" : "R";
-      return `Yes · ${supportWinner} leads support`;
-    }
-
-    function renderStateRows(states) {
-      const rows = states.map((state) => {
-        const row = document.createElement("tr");
-
-        const nameCell = document.createElement("td");
-        const name = document.createElement("span");
-        name.className = "house-state-name";
-        const code = document.createElement("span");
-        code.className = "house-state-code";
-        code.textContent = state.code;
-        name.append(code, document.createTextNode(state.name));
-        nameCell.append(name);
-
-        const supportCell = document.createElement("td");
-        const support = document.createElement("span");
-        support.className = "house-state-support";
-        const supportBar = document.createElement("span");
-        supportBar.className = "house-state-support-bar";
-        const demBar = document.createElement("i");
-        demBar.style.width = `${state.demSupport * 100}%`;
-        const repBar = document.createElement("i");
-        repBar.style.width = `${state.repSupport * 100}%`;
-        supportBar.append(demBar, repBar);
-        support.append(supportBar, document.createTextNode(`D ${formatPercent(state.demSupport, 1)}`));
-        supportCell.append(support);
-
-        const fptpCell = document.createElement("td");
-        fptpCell.textContent = formatComposition(state.fptpDemSeats, state.totalSeats);
-        const modelCell = document.createElement("td");
-        modelCell.textContent = formatComposition(state.demSeats, state.totalSeats);
-        const changeCell = document.createElement("td");
-        const change = document.createElement("span");
-        change.className = `house-state-change ${
-          state.demSeatChange > 0 ? "is-dem" : state.demSeatChange < 0 ? "is-rep" : "is-even"
-        }`;
-        change.textContent = describeSeatChange(state.demSeatChange);
-        changeCell.append(change);
-        row.append(nameCell, supportCell, fptpCell, modelCell, changeCell);
-        return row;
-      });
-      elements.houseStateRows.replaceChildren(...rows);
+      elements.houseDistrictsChanged.textContent = String(snapshot.flips);
+      elements.houseDistrictsChangedNote.textContent = `${snapshot.flips} of ${snapshot.totalSeats} modeled district assignments differ from their local plurality winner.`;
     }
 
     function moveToComposition(direction) {
@@ -601,7 +803,7 @@
     }
 
     function updateUrl(year, weight) {
-      if (!window.history?.replaceState) return;
+      if (preserveCleanPageUrl || !window.history?.replaceState) return;
       try {
         const url = new URL(window.location.href);
         url.searchParams.set("year", String(year));
@@ -623,8 +825,10 @@
     computeHouseSnapshot,
     computeMajorityInversion,
     distributeSeats,
+    buildChamberSeatLayout,
+    buildHouseSeatShareSeries,
+    getSeatShareChartDomain,
     getAdjacentCompositionWeight,
-    formatSupportRatio,
     formatComposition,
   };
 
