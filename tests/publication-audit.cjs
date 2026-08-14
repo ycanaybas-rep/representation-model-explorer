@@ -16,7 +16,9 @@ const html = pages["index.html"];
 const houseHtml = pages["house.html"];
 const script = read("script.js");
 const houseScript = read("house.js");
+const sharedStyles = read("styles.css");
 const standaloneStyles = read("standalone.css");
+const editorialStyles = read("model-editorial-system.css");
 const cname = read("CNAME").trim();
 const sitemap = read("sitemap.xml");
 const rootHtmlFiles = fs.readdirSync(root).filter((name) => name.endsWith(".html")).sort();
@@ -64,7 +66,40 @@ for (const [pageFile, pageHtml] of Object.entries(pages)) {
     `${pageFile}: main-site return accessible name must contain both visible labels`,
   );
   check(nav.indexOf("main-site-link") === -1, `${pageFile}: main-site return must remain outside the two-tab navigation`);
+
+  const footer = pageHtml.match(/<footer class="site-footer">[\s\S]*?<\/footer>/)?.[0] || "";
+  const authorList = footer.match(/<ul class="footer-authors" aria-label="Paper authors">[\s\S]*?<\/ul>/)?.[0] || "";
+  const authorNames = Array.from(authorList.matchAll(/<(?:a|li)(?:\s[^>]*)?>([^<]+)<\/(?:a|li)>/g), (match) =>
+    match[1].trim(),
+  ).filter((name) => name && !name.includes("\n"));
+  check(authorList.length > 0, `${pageFile}: footer needs one labelled paper-author list`);
+  check((footer.match(/class="footer-authors"/g) || []).length === 1, `${pageFile}: footer author list is duplicated`);
+  check(
+    JSON.stringify(authorNames) === JSON.stringify(["Yunus C. Aybas", "Oğuzhan Çelebi", "Surabhi Dutt"]),
+    `${pageFile}: footer author names or order are incorrect`,
+  );
+  check(
+    /href="https:\/\/www\.yunusaybas\.com\/" target="_blank" rel="noopener">Yunus C\. Aybas<\/a>/.test(authorList),
+    `${pageFile}: Yunus C. Aybas needs his verified personal-site link`,
+  );
+  check(
+    /href="https:\/\/www\.oguzhancelebi\.com\/" target="_blank" rel="noopener">Oğuzhan Çelebi<\/a>/.test(authorList),
+    `${pageFile}: Oğuzhan Çelebi needs his verified personal-site link`,
+  );
+  check(!/<a[^>]*>Surabhi Dutt<\/a>/.test(authorList), `${pageFile}: Surabhi Dutt has no personal-site link`);
+  check(
+    !/Historical election profiles|Covered states follow the model/.test(footer),
+    `${pageFile}: obsolete explanatory footer copy remains`,
+  );
 }
+
+check(/\.footer-authors\s*\{[\s\S]*?flex-wrap:\s*wrap/.test(sharedStyles), "footer author names must wrap safely");
+check(/\.footer-authors a:focus-visible\s*\{[\s\S]*?outline:\s*3px solid/.test(sharedStyles), "footer author links need a solid visible focus ring");
+check(
+  /@media \(max-width:\s*560px\)[\s\S]*?\.footer-authors\s*\{[\s\S]*?justify-content:\s*flex-start/.test(sharedStyles),
+  "footer author names need left-aligned mobile wrapping",
+);
+check(!/\.footer-inner\s*>\s*p/.test(editorialStyles), "removed footer paragraph still has a State-only style override");
 
 check(/\.main-site-link\s*\{[\s\S]*?min-height:\s*40px/.test(standaloneStyles), "main-site button needs a desktop target size");
 check(
