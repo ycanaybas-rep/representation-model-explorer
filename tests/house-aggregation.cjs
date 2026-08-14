@@ -610,7 +610,12 @@ for (const pageName of pageNames) {
 const houseHtml = fs.readFileSync(path.join(projectRoot, "house.html"), "utf8");
 const normalizedHouseHtml = houseHtml.replace(/\s+/g, " ");
 const houseCss = fs.readFileSync(path.join(projectRoot, "house.css"), "utf8");
+const houseJs = fs.readFileSync(path.join(projectRoot, "house.js"), "utf8");
+const siteJs = fs.readFileSync(path.join(projectRoot, "site.js"), "utf8");
 const requiredHouseIds = [
+  "housePageTitle",
+  "houseHeroQuestion",
+  "houseControls",
   "houseDemVoteShare",
   "houseRepVoteShare",
   "houseFptpSeats",
@@ -631,6 +636,49 @@ requiredHouseIds.forEach((id) => {
     `House page contains one #${id}`,
   );
 });
+equal((houseHtml.match(/<h1\b/g) || []).length, 1, "House page contains exactly one h1");
+check(
+  /<section class="house-intro" aria-labelledby="housePageTitle" aria-describedby="houseHeroQuestion"\s*>/.test(
+    normalizedHouseHtml,
+  ),
+  "House hero title and question are programmatically connected",
+);
+check(
+  /id="houseHeroQuestion"[^>]*>[\s\S]*?\?\s*<\/p>/.test(houseHtml),
+  "House hero follows its title with a direct question",
+);
+["One weight.", "Across the states.", "One House."].forEach((line) => {
+  check(normalizedHouseHtml.includes(line), `House hero includes “${line}”`);
+});
+[
+  {
+    asset: "assets/hero-local-oval-blue-v1.png",
+    className: "hero-local-oval",
+    width: "1400",
+    height: "440",
+  },
+  {
+    asset: "assets/hero-statewide-underline-red-v1.png",
+    className: "hero-statewide-underline",
+    width: "1800",
+    height: "240",
+  },
+].forEach(({ asset, className, width, height }) => {
+  const image = houseHtml.match(
+    new RegExp(`<img[\\s\\S]*?class="${className}"[\\s\\S]*?\\/>`),
+  )?.[0] || "";
+  check(image.includes(`src="${asset}`), `${className} uses the bundled hand-drawn asset`);
+  check(image.includes(`width="${width}"`), `${className} declares its intrinsic width`);
+  check(image.includes(`height="${height}"`), `${className} declares its intrinsic height`);
+  check(/alt=""/.test(image) && /aria-hidden="true"/.test(image), `${className} is decorative`);
+});
+const houseIds = Array.from(houseHtml.matchAll(/\bid="([^"]+)"/g), (match) => match[1]);
+equal(new Set(houseIds).size, houseIds.length, "House page IDs are unique");
+for (const match of houseHtml.matchAll(/\b(?:aria-labelledby|aria-describedby|aria-controls|for)="([^"]+)"/g)) {
+  for (const target of match[1].trim().split(/\s+/)) {
+    check(houseIds.includes(target), `House accessibility reference resolves to #${target}`);
+  }
+}
 const summaryMarkup = houseHtml.match(/<aside class="house-summary-cards"[\s\S]*?<\/aside>/)?.[0] || "";
 equal(
   (summaryMarkup.match(/<article class="house-summary-card">/g) || []).length,
@@ -654,6 +702,8 @@ equal(
   "remain unassigned",
   "neutral positions",
   "Democratic share of covered House seats",
+  "Data coverage",
+  "Move one weight. Watch the House change.",
 ].forEach((removedText) => {
   check(!normalizedHouseHtml.includes(removedText), `House page removes “${removedText}”`);
 });
@@ -681,7 +731,20 @@ check(
   /id="houseSeatShareChart"[\s\S]*?aria-labelledby="houseTrajectorySvgTitle"[\s\S]*?aria-describedby="houseTrajectoryDescription"/.test(houseHtml),
   "House chart exposes its changing description without an overridden aria-label",
 );
-const houseJs = fs.readFileSync(path.join(projectRoot, "house.js"), "utf8");
+check(
+  !/houseCoverageHeadline|house-scope-card/.test(`${houseHtml}\n${houseJs}\n${houseCss}`),
+  "House hero removes the former coverage card and its script dependency",
+);
+check(
+  /querySelector\("\.explorer-hero, \.house-intro"\)/.test(siteJs) &&
+    /hero-annotations-revealed/.test(siteJs),
+  "Shared scroll behavior reveals House and State hand-drawn annotations",
+);
+check(
+  /body\[data-page="house"\]\.hero-annotations-ready\.hero-annotations-revealed/.test(houseCss) &&
+    /@media \(prefers-reduced-motion: reduce\)[\s\S]*?clip-path:\s*none/.test(houseCss),
+  "House annotations animate on scroll and remain visible with reduced motion",
+);
 check(
   /buildChamberSeatLayout\(FULL_HOUSE_SEATS\)/.test(houseJs) &&
     /seat\.classList\.toggle\(\s*"is-other"/.test(houseJs) &&
