@@ -131,7 +131,10 @@
           <div class="workspace-summary" aria-live="polite">
             <span>
               <small>Statewide weight</small>
-              <output id="workspaceWeightValue">w = 0.500</output>
+              <output
+                id="workspaceWeightValue"
+                aria-label="Statewide weight: 50% of the zero-to-one model weight scale; exact w equals 0.500."
+              >w = 0.500 · 50%</output>
             </span>
             <span>
               <small>Model result</small>
@@ -1638,6 +1641,6 @@
     <script src="vendor/katex/katex.min.js" defer></script>
     <script src="site.js?v=20260720c" defer></script>
     <script src="election-data.js?v=20260804dataset1" defer></script>
-    <script src="script.js?v=20260814housevisual2" defer></script>
+    <script src="script.js?v=20260814weightpercent1" defer></script>
   </body>
 </html>

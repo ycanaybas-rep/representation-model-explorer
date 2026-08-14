@@ -2206,6 +2206,21 @@ function formatCompactSwitchWeight(value) {
   return `${percent.toFixed(digits).replace(/\.?0+$/, "")}%`;
 }
 
+function formatWeightWithPercent(
+  value,
+  schedule = null,
+  preferredDemSeats = null,
+) {
+  const exactWeight = formatAdaptiveWeight(
+    value,
+    schedule,
+    preferredDemSeats,
+  );
+  const compactPercent = formatCompactSwitchWeight(value);
+  if (exactWeight === "—" || compactPercent === "—") return "w = —";
+  return `w = ${exactWeight} · ${compactPercent}`;
+}
+
 function groupHorizontalSwitches(switches, domain, markerContainer) {
   const trackLength = markerContainer?.getBoundingClientRect().width || 360;
   const domainWidth = Math.max(domain.max - domain.min, 1e-9);
@@ -4335,7 +4350,16 @@ function renderFirstRunGuide({
     metadata.kind === "visitor-entered" ? "Entered-vote source" : "Dataset notes";
 
   els.workspaceScenarioTitle.textContent = getActiveScenarioLabel();
-  els.workspaceWeightValue.textContent = `w = ${weightText}`;
+  const compactWeightText = formatCompactSwitchWeight(w);
+  els.workspaceWeightValue.textContent = formatWeightWithPercent(
+    w,
+    activeModel?.schedule,
+    best.demSeats,
+  );
+  els.workspaceWeightValue.setAttribute(
+    "aria-label",
+    `Statewide model weight: ${compactWeightText} of the zero-to-one scale; exact w equals ${weightText}.`,
+  );
   els.workspaceDemSeats.textContent = `${best.demSeats} Democratic ${best.demSeats === 1 ? "seat" : "seats"}`;
   const republicanSeats = totalSeats - best.demSeats;
   els.workspaceRepSeats.textContent = `${republicanSeats} Republican ${republicanSeats === 1 ? "seat" : "seats"}`;
@@ -10039,6 +10063,7 @@ if (typeof globalThis !== "undefined") {
     getPaperChartWeightAtClientX,
     formatAdaptiveWeight,
     formatCompactSwitchWeight,
+    formatWeightWithPercent,
     csvCell,
     getAdaptiveNonnegativeAxisView,
     getSwitchPivotalDistricts,
