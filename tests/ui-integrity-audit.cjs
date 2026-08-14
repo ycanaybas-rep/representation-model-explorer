@@ -7,6 +7,7 @@ const path = require("node:path");
 const projectRoot = path.resolve(__dirname, "..");
 const indexHtml = fs.readFileSync(path.join(projectRoot, "index.html"), "utf8");
 const script = fs.readFileSync(path.join(projectRoot, "script.js"), "utf8");
+const siteScript = fs.readFileSync(path.join(projectRoot, "site.js"), "utf8");
 const styles = [
   "model-workspace.css",
   "model-editorial-system.css",
@@ -51,6 +52,20 @@ equal(
 check(/class="figure-method-note"/.test(indexHtml), "Figure 04 keeps its extended method note after the chart");
 
 check(/id="mapViewLabel"/.test(indexHtml), "the map has a dynamic view label");
+check(
+  /class="map-status-row"[^>]*aria-live="polite"[^>]*aria-atomic="true"/.test(indexHtml),
+  "the visible mode-specific map result is a polite live status",
+);
+check(/id="workspaceResultLabel"/.test(indexHtml), "workspace result label can follow the displayed allocation mode");
+equal(
+  Array.from(indexHtml.matchAll(/<textarea[^>]+maxlength="256"/g)).length,
+  5,
+  "all five advanced formula fields enforce the permalink length limit",
+);
+check(
+  siteScript.includes("hero-annotations-ready") && siteScript.includes("hero-annotations-revealed"),
+  "hero annotations reveal once the visitor begins scrolling",
+);
 const exportTargets = Array.from(
   indexHtml.matchAll(/data-export-status-for="([^"]+)"/g),
   (match) => match[1],

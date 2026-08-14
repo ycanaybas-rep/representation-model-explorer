@@ -51,6 +51,24 @@ equal(model2024.totalSeats, 343, "2024 House panel has 343 covered seats");
 equal(model2024.uncoveredSeats, 92, "2024 House panel visibly leaves 92 seats uncovered");
 equal(model2024.switchGroups.length, 53, "2024 House panel has 53 recorded switching points");
 equal(model2024.proxyCount, 28, "2024 coverage reports the source proxy count");
+check(
+  model2024.states.every((state) => state.schedule?.source === "dataset"),
+  "every 2024 state uses the authoritative bundled switch schedule",
+);
+check(
+  house.formatCoverageDetail(model2024).includes("28 proxy-marked races"),
+  "2024 coverage copy discloses proxy-marked races",
+);
+equal(
+  house.formatWeight(0.08063, engine),
+  "0.080630",
+  "House weight copy retains a meaningful six-decimal switch value",
+);
+equal(
+  house.formatWeightWithPercent(0.00753, engine),
+  "w = 0.007530 · 0.753%",
+  "House weight copy matches the State exact-plus-percent convention",
+);
 approx(model2024.demSupport + model2024.repSupport, 1, "2024 support shares sum to one");
 equal(
   house.distributeSeats(model2024.totalSeats).reduce((total, count) => total + count, 0),
@@ -308,14 +326,22 @@ for (const year of availableYears) {
     );
     for (const stateResult of snapshot.stateResults) {
       const state = yearModel.states.find((candidate) => candidate.name === stateResult.name);
-      const direct = engine.chooseBestCandidate(
-        engine.buildObjectiveCurve(state.frontier, state.metrics, weight, yearModel.spec),
+      const curve = engine.buildObjectiveCurve(
+        state.frontier,
         state.metrics,
+        weight,
+        yearModel.spec,
+      );
+      const direct = engine.chooseScheduleCandidate(
+        curve,
+        state.schedule,
+        weight,
+        engine.chooseBestCandidate(curve, state.metrics),
       );
       equal(
         stateResult.demSeats,
         direct.demSeats,
-        `${year} ${stateResult.name} at w=${weight}: House page uses the direct state optimum`,
+        `${year} ${stateResult.name} at w=${weight}: House page uses the authoritative state schedule`,
       );
       equal(
         stateResult.flips,
@@ -325,6 +351,43 @@ for (const year of availableYears) {
     }
   }
 }
+
+let authoritativeSwitchChecks = 0;
+for (const year of availableYears) {
+  const yearModel = getYearModel(year);
+  for (const state of yearModel.states) {
+    state.election.switchWeights.forEach((sourceWeight, index) => {
+      approx(
+        state.schedule.switches[index].weight,
+        sourceWeight,
+        `${year} ${state.code} switch ${index + 1}: House stores the source weight`,
+        1e-12,
+      );
+      const publicWeight = Number(sourceWeight.toFixed(6));
+      const snapshot = house.computeHouseSnapshot(yearModel, publicWeight);
+      const stateResult = snapshot.stateResults.find((item) => item.name === state.name);
+      const curve = engine.buildObjectiveCurve(
+        state.frontier,
+        state.metrics,
+        publicWeight,
+        yearModel.spec,
+      );
+      const expected = engine.chooseScheduleCandidate(
+        curve,
+        state.schedule,
+        publicWeight,
+        engine.chooseBestCandidate(curve, state.metrics),
+      );
+      equal(
+        stateResult.demSeats,
+        expected.demSeats,
+        `${year} ${state.code} switch ${index + 1}: House and State agree at the six-decimal public weight`,
+      );
+      authoritativeSwitchChecks += 1;
+    });
+  }
+}
+equal(authoritativeSwitchChecks, 482, "every bundled switch receives a House/State parity check");
 
 for (let index = 1; index < model2024.switchGroups.length; index += 1) {
   check(
@@ -397,6 +460,7 @@ const requiredHouseIds = [
   "houseSeatShareChart",
   "houseTrajectoryDescription",
   "houseTrajectoryReading",
+  "houseChartScale",
 ];
 requiredHouseIds.forEach((id) => {
   equal(
@@ -438,6 +502,14 @@ equal(
 check(
   /class="house-chart-scroll"[\s\S]*?tabindex="0"[\s\S]*?role="region"/.test(houseHtml),
   "House chart is a keyboard-focusable scroll region",
+);
+check(
+  /id="houseSeatShareChart"[\s\S]*?aria-labelledby="houseTrajectorySvgTitle"[\s\S]*?aria-describedby="houseTrajectoryDescription"/.test(houseHtml),
+  "House chart exposes its changing description without an overridden aria-label",
+);
+check(
+  /buildChamberSeatLayout\(FULL_HOUSE_SEATS\)/.test(fs.readFileSync(path.join(projectRoot, "house.js"), "utf8")),
+  "House chamber draws all 435 positions and leaves uncovered seats neutral",
 );
 check(
   /\.house-chamber\s*\{[\s\S]*?position:\s*relative/.test(houseCss) &&

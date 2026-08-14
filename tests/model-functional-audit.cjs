@@ -22,6 +22,7 @@ function equal(actual, expected, message) {
 
 check(engine, "shared model engine is exported");
 equal(engine.FORMULA_VALIDATION_MAX_DISTRICTS, 53, "formula validation covers the dataset maximum");
+equal(engine.MAX_FORMULA_SOURCE_LENGTH, 256, "live and permalink formulas share one length limit");
 
 const indexHtml = fs.readFileSync(path.join(projectRoot, "index.html"), "utf8");
 check(/id="mapViewLabel"/.test(indexHtml), "map view label can be updated with the active mode");
@@ -73,6 +74,71 @@ check(
     .compileSpecification(exactInputFormulas, { districts, weight: 0.37 })
     .errors.some(({ key }) => key === "districtLoss"),
   "a formula singular at an actual selected-election vote share is rejected before activation",
+);
+
+const californiaDistricts = engine.generateScenario("California", 2024);
+const californiaExactShare = californiaDistricts[0].demShare.toPrecision(17);
+const electionSpecificFormulas = {
+  ...engine.defaultFormulas,
+  districtLossA: `1/(p-${californiaExactShare})^2`,
+  districtLossB: `1/(p-${californiaExactShare})^2`,
+};
+equal(
+  engine.compileSpecification(electionSpecificFormulas, { districts, weight: 0.00325 }).errors.length,
+  0,
+  "the cross-election fixture is valid on NC 2018",
+);
+check(
+  engine
+    .compileSpecification(electionSpecificFormulas, { districts: californiaDistricts, weight: 0.000886 })
+    .errors.some(({ key }) => key === "districtLoss"),
+  "the same formula is rejected before a transition to its singular California profile",
+);
+
+const midrangeSingularity = {
+  ...engine.defaultFormulas,
+  aggregation: "y_1+y_2+0/(y_1-2.5682360394865231)",
+};
+equal(
+  engine.compileSpecification(midrangeSingularity).errors.length,
+  0,
+  "the midrange aggregation fixture deliberately passes the generic formula grid",
+);
+check(
+  engine
+    .compileSpecification(midrangeSingularity, { districts, weight: 0.00325 })
+    .errors.some(({ key }) => key === "aggregation"),
+  "scenario validation samples the full weight range and rejects a midrange singularity",
+);
+
+check(
+  engine
+    .compileSpecification({
+      ...engine.defaultFormulas,
+      aggregation: "y_1+y_2+" + "0".repeat(engine.MAX_FORMULA_SOURCE_LENGTH),
+    })
+    .errors.some(({ key }) => key === "aggregation"),
+  "formula sources longer than the permalink limit are rejected",
+);
+
+const tiedCustomProfile = engine.validateCustomStateDefinition({
+  name: "Tie fixture",
+  districts: [
+    { demVotes: 50, repVotes: 50 },
+    { demVotes: 55, repVotes: 45 },
+    { demVotes: 45, repVotes: 55 },
+  ],
+});
+check(!tiedCustomProfile.value && /tied/i.test(tiedCustomProfile.error), "custom tied districts require a defined local winner");
+
+const newYorkNearTie = engine
+  .generateScenario("New York", 2020)
+  .find((district) => district.id === 22);
+check(!engine.isExactDistrictTie(newYorkNearTie), "NY 2020 district 22 is preserved as a real plurality, not a tie");
+equal(
+  engine.formatDistrictWinningMargin(newYorkNearTie.margin),
+  "0.035 pts",
+  "sub-tenth-point plurality margins receive enough visible precision",
 );
 
 const spec = defaultCompilation.compiled;
