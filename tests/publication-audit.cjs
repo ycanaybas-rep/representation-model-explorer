@@ -16,6 +16,7 @@ const html = pages["index.html"];
 const houseHtml = pages["house.html"];
 const script = read("script.js");
 const houseScript = read("house.js");
+const standaloneStyles = read("standalone.css");
 const cname = read("CNAME").trim();
 const sitemap = read("sitemap.xml");
 const rootHtmlFiles = fs.readdirSync(root).filter((name) => name.endsWith(".html")).sort();
@@ -52,7 +53,29 @@ for (const [pageFile, pageHtml] of Object.entries(pages)) {
   check(JSON.stringify(links) === JSON.stringify(expectedNavigation), `${pageFile}: State/House navigation is incomplete`);
   check(JSON.stringify(labels) === JSON.stringify(["State", "House"]), `${pageFile}: navigation labels are incorrect`);
   check((nav.match(/aria-current="page"/g) || []).length === 1, `${pageFile}: navigation needs one current page`);
+
+  const mainSiteLinks = Array.from(
+    pageHtml.matchAll(/<a class="main-site-link" href="https:\/\/yunusaybas\.com\/"([^>]*)>[\s\S]*?<\/a>/g),
+  );
+  check(mainSiteLinks.length === 1, `${pageFile}: needs exactly one visible main-site return button`);
+  check(!/target=/.test(mainSiteLinks[0]?.[0] || ""), `${pageFile}: main-site return must stay in the same tab`);
+  check(
+    /aria-label="Main site — Back to yunusaybas\.com"/.test(mainSiteLinks[0]?.[0] || ""),
+    `${pageFile}: main-site return accessible name must contain both visible labels`,
+  );
+  check(nav.indexOf("main-site-link") === -1, `${pageFile}: main-site return must remain outside the two-tab navigation`);
 }
+
+check(/\.main-site-link\s*\{[\s\S]*?min-height:\s*40px/.test(standaloneStyles), "main-site button needs a desktop target size");
+check(
+  /@media \(max-width:\s*1040px\)[\s\S]*?\.main-site-link\s*\{[\s\S]*?min-height:\s*44px/.test(standaloneStyles),
+  "main-site button needs a 44px compact target size",
+);
+check(/@media \(max-width:\s*420px\)[\s\S]*?\.main-site-link-short\s*\{[\s\S]*?display:\s*inline/.test(standaloneStyles), "main-site button needs compact mobile copy");
+check(
+  /@media \(max-width:\s*1040px\)[\s\S]*?\.site-header \.primary-nav[\s\S]*?grid-column:\s*1;[\s\S]*?\.main-site-link\s*\{[\s\S]*?grid-column:\s*2;[\s\S]*?grid-row:\s*2;/.test(standaloneStyles),
+  "compact header must keep visual focus order aligned with State, House, then Main site",
+);
 
 check(!/(?:paper|methodology|state-lab)\.html/.test(script), "State script links to a removed page");
 check(!/(?:paper|methodology|state-lab)\.html/.test(houseScript), "House script links to a removed page");
