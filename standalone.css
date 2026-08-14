@@ -107,11 +107,85 @@ body[data-page="explorer"] .standalone-notes {
   text-underline-offset: 0.18em;
 }
 
+/* The portfolio return sits outside the two-tab explorer navigation. */
+:is(body[data-page="explorer"], body[data-page="house"]) .site-header .header-inner {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+}
+
+.main-site-link {
+  display: inline-flex;
+  min-height: 40px;
+  align-items: center;
+  justify-content: center;
+  justify-self: end;
+  padding: 0 14px;
+  border: 1px solid #18514c;
+  border-radius: 999px;
+  color: #18514c;
+  background: transparent;
+  font-size: 0.72rem;
+  font-weight: 780;
+  line-height: 1;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: color 150ms ease, background-color 150ms ease, box-shadow 150ms ease;
+}
+
+.main-site-link:hover {
+  color: #fffefa;
+  background: #18514c;
+}
+
+.main-site-link:focus-visible {
+  outline: 3px solid #18514c;
+  outline-offset: 3px;
+}
+
+.main-site-link-short {
+  display: none;
+}
+
 /* Conference edition: keep the two destinations balanced at every compact width. */
 @media (max-width: 1040px) {
+  :is(body[data-page="explorer"], body[data-page="house"]) .site-header .header-inner {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px 14px;
+  }
+
+  :is(body[data-page="explorer"], body[data-page="house"]) .brand-lockup {
+    grid-column: 1 / -1;
+    grid-row: 1;
+  }
+
   .site-header .primary-nav,
   body[data-page="explorer"] .primary-nav {
+    display: grid;
+    width: 100%;
+    grid-column: 1;
+    grid-row: 2;
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    justify-content: stretch;
+  }
+
+  .main-site-link {
+    min-height: 44px;
+    grid-column: 2;
+    grid-row: 2;
+  }
+}
+
+@media (max-width: 420px) {
+  .main-site-link {
+    padding-inline: 10px;
+    font-size: 0.68rem;
+  }
+
+  .main-site-link-full {
+    display: none;
+  }
+
+  .main-site-link-short {
+    display: inline;
   }
 }
 
@@ -143,6 +217,10 @@ body[data-page="explorer"] .standalone-notes {
 }
 
 @media (max-width: 340px) {
+  :is(body[data-page="explorer"], body[data-page="house"]) .brand-title {
+    font-size: 0.82rem;
+  }
+
   body[data-page="explorer"] .primary-nav {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -152,6 +230,21 @@ body[data-page="explorer"] .standalone-notes {
     padding-inline: 8px;
     font-size: 0.68rem;
     white-space: nowrap;
+  }
+}
+
+@media (max-width: 280px) {
+  .main-site-link {
+    width: 100%;
+    grid-column: 1 / -1;
+    grid-row: 3;
+    justify-self: stretch;
+  }
+
+  .site-header .primary-nav,
+  body[data-page="explorer"] .primary-nav {
+    grid-column: 1 / -1;
+    grid-row: 2;
   }
 }
 
