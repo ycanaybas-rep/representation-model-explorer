@@ -429,6 +429,55 @@ for (const year of availableYears) {
       house.FULL_HOUSE_SEATS,
       `${year} at w=${weight}: full party assignments partition all 435 seats`,
     );
+    const chamberCategories = Array.from(
+      { length: house.FULL_HOUSE_SEATS },
+      (_, index) => house.getChamberSeatCategory(index, snapshot, yearModel),
+    );
+    const allowedCategories = new Set([
+      "fixed-dem",
+      "modeled-dem",
+      "fixed-other",
+      "modeled-rep",
+      "fixed-rep",
+    ]);
+    check(
+      chamberCategories.every((category) => allowedCategories.has(category)),
+      `${year} at w=${weight}: every chamber position has exactly one recognized category`,
+    );
+    const chamberCategoryCounts = Object.fromEntries(
+      Array.from(allowedCategories, (category) => [
+        category,
+        chamberCategories.filter((item) => item === category).length,
+      ]),
+    );
+    deepEqual(
+      chamberCategoryCounts,
+      {
+        "fixed-dem": yearModel.outsideDemSeats,
+        "modeled-dem": snapshot.demSeats,
+        "fixed-other": yearModel.outsideOtherSeats,
+        "modeled-rep": snapshot.repSeats,
+        "fixed-rep": yearModel.outsideRepSeats,
+      },
+      `${year} at w=${weight}: chamber colors distinguish exact modeled and fixed totals`,
+    );
+    deepEqual(
+      chamberCategories.flatMap((category, index) =>
+        category === "fixed-dem" ? [index] : [],
+      ),
+      Array.from({ length: yearModel.outsideDemSeats }, (_, index) => index),
+      `${year} at w=${weight}: fixed Democratic positions stay anchored at the left edge`,
+    );
+    deepEqual(
+      chamberCategories.flatMap((category, index) =>
+        category === "fixed-rep" ? [index] : [],
+      ),
+      Array.from(
+        { length: yearModel.outsideRepSeats },
+        (_, index) => house.FULL_HOUSE_SEATS - yearModel.outsideRepSeats + index,
+      ),
+      `${year} at w=${weight}: fixed Republican positions stay anchored at the right edge`,
+    );
     approx(
       snapshot.fullDemSeatShare,
       snapshot.fullDemSeats / house.FULL_HOUSE_SEATS,
@@ -589,6 +638,15 @@ equal(
   "House page contains exactly the three requested summary cards",
 );
 [
+  "Modeled Democratic",
+  "Fixed Democratic",
+  "Modeled Republican",
+  "Fixed Republican",
+  "Fixed Independent",
+].forEach((legendLabel) => {
+  check(normalizedHouseHtml.includes(legendLabel), `House legend includes “${legendLabel}”`);
+});
+[
   "Equal-district two-party ratio",
   "Popular-vote proxy",
   "Where the House total comes from",
@@ -626,8 +684,10 @@ check(
 const houseJs = fs.readFileSync(path.join(projectRoot, "house.js"), "utf8");
 check(
   /buildChamberSeatLayout\(FULL_HOUSE_SEATS\)/.test(houseJs) &&
-    /seat\.classList\.toggle\(\s*"is-other"/.test(houseJs),
-  "House chamber draws all 435 assignments and supports Independent seats",
+    /seat\.classList\.toggle\(\s*"is-other"/.test(houseJs) &&
+    /seat\.classList\.toggle\(\s*"is-fixed-dem"/.test(houseJs) &&
+    /seat\.classList\.toggle\(\s*"is-fixed-rep"/.test(houseJs),
+  "House chamber draws all 435 assignments and distinguishes fixed seats",
 );
 check(
   /218-seat majority/.test(houseJs) && /Democratic share of all 435/.test(houseJs),
@@ -637,6 +697,13 @@ check(
   /\.house-chamber\s*\{[\s\S]*?position:\s*relative/.test(houseCss) &&
     /\.house-seat\s*\{[\s\S]*?position:\s*absolute[\s\S]*?border-radius:\s*50%/.test(houseCss),
   "House chamber CSS renders visible seats on a positioned semicircular plan",
+);
+check(
+  /--house-dem-fixed:\s*#[0-9a-f]{6}/i.test(houseCss) &&
+    /--house-rep-fixed:\s*#[0-9a-f]{6}/i.test(houseCss) &&
+    /\.house-seat\.is-dem\.is-fixed-dem\s*\{[\s\S]*?inset/.test(houseCss) &&
+    /\.house-seat\.is-rep\.is-fixed-rep\s*\{[\s\S]*?inset/.test(houseCss),
+  "Fixed Democratic and Republican seats have distinct outlined party colors",
 );
 check(
   houseHtml.indexOf('src="election-data.js') < houseHtml.indexOf('src="script.js') &&
