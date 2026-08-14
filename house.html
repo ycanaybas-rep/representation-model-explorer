@@ -28,8 +28,9 @@
     <link rel="apple-touch-icon" href="apple-touch-icon-two-party-v2.png?v=20260728brand2" />
     <link rel="stylesheet" href="styles.css?v=20260804datasetvisual1" />
     <link rel="stylesheet" href="scholarly-ui.css?v=20260728surface1" />
-    <link rel="stylesheet" href="house.css?v=20260814housevisual2" />
-    <link rel="stylesheet" href="standalone.css?v=20260814housevisual2" />
+    <link rel="stylesheet" href="house.css?v=20260814polish1" />
+    <link rel="stylesheet" href="final-quality-control.css?v=20260814polish1" />
+    <link rel="stylesheet" href="standalone.css?v=20260814polish1" />
   </head>
   <body data-page="house">
     <a class="skip-link" href="#mainContent">Skip to House Explorer</a>
@@ -37,7 +38,7 @@
     <header class="site-header">
       <div class="header-inner">
         <a class="brand-lockup" href="./" aria-label="Districts to Delegations home">
-          <img class="brand-mark" src="assets/model-mark-two-party-v2.png?v=20260728brand2" width="42" height="42" alt="" />
+          <img class="brand-mark" src="assets/model-mark-two-party-v2.png?v=20260728brand2" width="34" height="34" alt="" />
           <div>
             <span class="brand-title">Districts to Delegations</span>
           </div>
@@ -58,7 +59,7 @@
           <h1 id="housePageTitle">Move one weight. Watch the modeled House panel change.</h1>
           <p>
             Apply the same statewide weight to every covered state. Each state delegation is solved
-            separately under the paper’s linear benchmark, then the seat totals are added together.
+            separately under <a class="house-inline-paper" href="references/representation-in-district-based-elections.pdf" target="_blank" rel="noopener">the paper’s linear benchmark</a>, then the seat totals are added together.
           </p>
         </div>
         <aside class="house-scope-card" aria-label="House Explorer scope">
@@ -74,7 +75,7 @@
             <span class="eyebrow">Shared model controls</span>
             <h2 id="houseControlsTitle">Choose a year, then change <i>w</i></h2>
           </div>
-          <span class="house-spec-badge">Paper linear benchmark</span>
+          <a class="house-spec-badge" href="references/representation-in-district-based-elections.pdf" target="_blank" rel="noopener">Paper benchmark ↗</a>
         </div>
 
         <div class="house-control-grid">
@@ -87,7 +88,7 @@
           <div class="house-weight-field">
             <div class="house-weight-heading">
               <label for="houseWeight">Statewide weight <i>w</i></label>
-              <output id="houseWeightValue" for="houseWeight">w = 0.000</output>
+              <output id="houseWeightValue" for="houseWeight">w = 0.000 · 0%</output>
             </div>
             <div class="house-weight-track">
               <div id="houseWeightMarkers" class="house-weight-markers" aria-hidden="true"></div>
@@ -102,8 +103,8 @@
               />
             </div>
             <div class="house-weight-scale" aria-hidden="true">
-              <span>0 · Local district fit</span>
-              <span>1 · State proportionality</span>
+              <span>0 · Local district results</span>
+              <span>1 · Statewide representation</span>
             </div>
             <div class="house-weight-tools">
               <div>
@@ -155,6 +156,12 @@
           >
             <span class="house-chamber-dais" aria-hidden="true"></span>
           </div>
+          <div class="house-chamber-legend" aria-label="House chamber legend">
+            <span><i class="is-dem" aria-hidden="true"></i>Democratic</span>
+            <span><i class="is-rep" aria-hidden="true"></i>Republican</span>
+            <span><i class="is-uncovered" aria-hidden="true"></i>Outside the panel</span>
+          </div>
+          <p class="house-chamber-note">All 435 positions are shown. The semicircle shows composition, not member seating or geography.</p>
 
           <div class="house-vote-seat-band">
             <div class="house-vote-share is-dem">
@@ -200,7 +207,7 @@
           </article>
 
           <article class="house-summary-card">
-            <span>Proportionality</span>
+            <span>State proportional target</span>
             <strong id="houseProportionalSeats">—</strong>
             <p>Nearest whole-seat proportional target in each state, then summed.</p>
           </article>
@@ -233,12 +240,14 @@
             class="house-seat-share-chart"
             viewBox="0 0 960 440"
             role="img"
-            aria-labelledby="houseTrajectorySvgTitle houseTrajectoryDescription"
+            aria-labelledby="houseTrajectorySvgTitle"
+            aria-describedby="houseTrajectoryDescription"
           >
             <title id="houseTrajectorySvgTitle">Democratic share of covered House seats by statewide weight</title>
             <desc id="houseTrajectoryDescription">The step line shows the modeled Democratic seat share from w equals zero through one. A marker identifies the selected weight.</desc>
           </svg>
         </div>
+        <p id="houseChartScale" class="house-chart-scale-note">Focused vertical scale will appear after the year loads.</p>
         <p class="house-chart-cue" aria-hidden="true">Swipe horizontally to inspect the full chart</p>
       </section>
     </main>
@@ -249,16 +258,15 @@
           <img class="footer-mark" src="assets/model-mark-two-party-v2.png?v=20260728brand2" width="34" height="34" alt="" />
           <div>
             <strong>Districts to Delegations</strong>
-            <span>One election · Two scales</span>
           </div>
         </div>
         <p>Modeled panel totals use covered states only; omitted seats remain unassigned.</p>
       </div>
     </footer>
 
-    <script src="site.js?v=20260814housevisual2" defer></script>
+    <script src="site.js?v=20260814polish1" defer></script>
     <script src="election-data.js?v=20260804dataset1" defer></script>
-    <script src="script.js?v=20260814housevisual2" defer></script>
-    <script src="house.js?v=20260814housevisual2" defer></script>
+    <script src="script.js?v=20260814polish1" defer></script>
+    <script src="house.js?v=20260814polish1" defer></script>
   </body>
 </html>

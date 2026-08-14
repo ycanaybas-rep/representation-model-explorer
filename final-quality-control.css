@@ -4,6 +4,7 @@
 
 :where(
     body[data-page="explorer"],
+    body[data-page="house"],
     body.paper-reader,
     body[data-page="methodology"],
     body[data-page="state-lab"]
@@ -13,6 +14,7 @@
 
 :where(
     body[data-page="explorer"],
+    body[data-page="house"],
     body.paper-reader,
     body[data-page="methodology"],
     body[data-page="state-lab"]
@@ -672,6 +674,7 @@ body[data-page="state-lab"] .site-footer p {
 @media print {
   :where(
       body[data-page="explorer"],
+      body[data-page="house"],
       body.paper-reader,
       body[data-page="methodology"],
       body[data-page="state-lab"]

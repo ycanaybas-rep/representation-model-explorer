@@ -8,6 +8,10 @@
   box-shadow: 0 14px 34px rgba(23, 35, 31, 0.07);
 }
 
+body[data-page="explorer"] .standalone-notes {
+  width: 100%;
+}
+
 .standalone-notes-heading {
   display: flex;
   align-items: end;
@@ -28,6 +32,7 @@
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
+  align-items: start;
   margin-top: 22px;
 }
 
@@ -120,6 +125,10 @@
   .standalone-notes {
     width: min(100% - 24px, 1480px);
     padding: 22px 16px;
+  }
+
+  body[data-page="explorer"] .standalone-notes {
+    width: 100%;
   }
 
   .standalone-notes-heading {

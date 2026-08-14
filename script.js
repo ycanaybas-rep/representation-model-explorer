@@ -32,6 +32,8 @@ const CUSTOM_YEAR_LABEL = "Entered votes";
 const CUSTOM_STATE_STORAGE_KEY = "misrepresentationCustomStateV1";
 const CUSTOM_DISTRICT_MIN = 3;
 const CUSTOM_DISTRICT_MAX = 18;
+const MAX_FORMULA_SOURCE_LENGTH = 256;
+const FORMULA_SCENARIO_WEIGHT_SAMPLES = 100;
 const FORMULA_VALIDATION_MAX_DISTRICTS = Math.max(
   CUSTOM_DISTRICT_MAX,
   ...Object.values(bundledElectionData.states).flatMap((state) =>
@@ -619,6 +621,48 @@ function setActiveScenarioStartingWeight() {
   return startingWeight;
 }
 
+function getScenarioDistricts(stateName, year, customDefinition = customState) {
+  return stateName === CUSTOM_STATE_KEY
+    ? createCustomScenario(customDefinition)
+    : generateScenario(stateName, year);
+}
+
+function validateScenarioActivation(stateName, year, customDefinition = customState) {
+  try {
+    const districts = getScenarioDistricts(stateName, year, customDefinition);
+    const errors = compiledSpec
+      ? validateCompiledSpecificationForScenario(
+          compiledSpec,
+          districts,
+          Number(els?.wSlider?.value ?? 0.5),
+        )
+      : [];
+    return { districts, errors };
+  } catch (error) {
+    return {
+      districts: null,
+      errors: [
+        {
+          key: "districtLoss",
+          message: error instanceof Error ? error.message : "The election could not be evaluated.",
+        },
+      ],
+    };
+  }
+}
+
+function reportScenarioActivationFailure(stateName, year, errors) {
+  clearAllFormulaErrors();
+  errors.forEach(({ key, message }) => setFormulaError(key, message));
+  const label =
+    stateName === CUSTOM_STATE_KEY
+      ? "the custom profile"
+      : `${stateName} ${year}`;
+  const message = `The active formulas are not valid for ${label}. The current election was kept.`;
+  setFormulaStatus(message, true);
+  setAnalysisActionStatus(message, true);
+}
+
 function getElectionQualityCounts(election) {
   return (election?.districts || []).reduce(
     (counts, district) => ({
@@ -863,6 +907,7 @@ function positionGeneralModelDrawer() {
 
 function cacheElements() {
   [
+    "houseNavLink",
     "stateSelect",
     "yearSelect",
     "customStateLaunch",
@@ -917,6 +962,7 @@ function cacheElements() {
     "entryWeightSummary",
     "workspaceScenarioTitle",
     "workspaceWeightValue",
+    "workspaceResultLabel",
     "workspaceDemSeats",
     "workspaceRepSeats",
     "guidedProgressStatus",
@@ -1229,8 +1275,10 @@ function updateCustomVoteRowShare(row) {
   const partyCue = row.querySelector(".custom-party-cue");
   if (!isValid) {
     partyCue.textContent = "0–100 required";
+  } else if (Math.abs(sharePercent - 50) <= 1e-12) {
+    partyCue.textContent = "Tie needs a winner";
   } else if (Math.abs(sharePercent - 50) < 0.05) {
-    partyCue.textContent = "Tied";
+    partyCue.textContent = "Near tie";
   } else {
     const leadingParty = sharePercent > 50 ? "D" : "R";
     partyCue.textContent = `${leadingParty} +${Math.abs(sharePercent - 50).toFixed(1)}`;
@@ -1309,6 +1357,24 @@ function analyzeCustomState() {
     return;
   }
   els.customStateName.removeAttribute("aria-invalid");
+
+  const activation = validateScenarioActivation(
+    CUSTOM_STATE_KEY,
+    CUSTOM_YEAR_LABEL,
+    validation.value,
+  );
+  if (activation.errors.length) {
+    reportScenarioActivationFailure(
+      CUSTOM_STATE_KEY,
+      CUSTOM_YEAR_LABEL,
+      activation.errors,
+    );
+    setCustomStateStatus(
+      "This profile cannot be analyzed with the active formulas. The current election was kept.",
+      true,
+    );
+    return;
+  }
 
   customState = validation.value;
   saveCustomState(customState);
@@ -1639,6 +1705,12 @@ function validateCustomStateDefinition(candidate) {
         error: `District ${index + 1} must contain at least one valid two-party vote.`,
       };
     }
+    if (demVotes === repVotes) {
+      return {
+        value: null,
+        error: `District ${index + 1} is tied. Enter a Democratic share above or below 50% so its local winner is defined.`,
+      };
+    }
     normalizedDistricts.push({ demVotes, repVotes });
   }
 
@@ -1703,14 +1775,22 @@ function populateBenchmarkControls() {
 function bindControls() {
   els.stateSelect.addEventListener("change", () => {
     const selectedState = els.stateSelect.value;
+    const selectedYear =
+      selectedState === CUSTOM_STATE_KEY
+        ? CUSTOM_YEAR_LABEL
+        : stateConfigs[selectedState].years.includes(Number(activeYear))
+          ? Number(activeYear)
+          : stateConfigs[selectedState].years.at(-1);
+    const activation = validateScenarioActivation(selectedState, selectedYear);
+    if (activation.errors.length) {
+      els.stateSelect.value = activeState;
+      syncYearOptions();
+      reportScenarioActivationFailure(selectedState, selectedYear, activation.errors);
+      return;
+    }
     clearCandidateInspection();
     activeState = selectedState;
-    if (activeState === CUSTOM_STATE_KEY) {
-      activeYear = CUSTOM_YEAR_LABEL;
-    } else {
-      const years = stateConfigs[activeState].years;
-      activeYear = years.includes(Number(activeYear)) ? Number(activeYear) : years.at(-1);
-    }
+    activeYear = selectedYear;
     syncCustomStateOption();
     syncYearOptions();
     setActiveScenarioStartingWeight();
@@ -1720,8 +1800,15 @@ function bindControls() {
 
   els.yearSelect.addEventListener("change", () => {
     if (activeState === CUSTOM_STATE_KEY) return;
+    const selectedYear = Number(els.yearSelect.value);
+    const activation = validateScenarioActivation(activeState, selectedYear);
+    if (activation.errors.length) {
+      els.yearSelect.value = String(activeYear);
+      reportScenarioActivationFailure(activeState, selectedYear, activation.errors);
+      return;
+    }
     clearCandidateInspection();
-    activeYear = Number(els.yearSelect.value);
+    activeYear = selectedYear;
     setActiveScenarioStartingWeight();
     setGuidedProgress(1);
     render();
@@ -2878,6 +2965,28 @@ function syncYearOptions() {
 }
 
 function render() {
+  if (!compiledSpec) return false;
+  const fallbackModel = activeModel;
+  try {
+    renderUnsafe();
+    return true;
+  } catch (error) {
+    if (!fallbackModel || !Number.isFinite(Number(fallbackModel.w))) throw error;
+    els.wSlider.value = Number(fallbackModel.w).toFixed(6);
+    try {
+      renderUnsafe();
+    } catch {
+      throw error;
+    }
+    const detail = humanizeFormulaError(error).replace(/[.\s]+$/, "");
+    const message = `That weight could not be evaluated with the active formulas (${detail}). The last valid result was restored.`;
+    setFormulaStatus(message, true);
+    setAnalysisActionStatus(message, true);
+    return false;
+  }
+}
+
+function renderUnsafe() {
   if (!compiledSpec) return;
   setAnalysisActionStatus("");
   const w = Number(els.wSlider.value);
@@ -4360,9 +4469,27 @@ function renderFirstRunGuide({
     "aria-label",
     `Statewide model weight: ${compactWeightText} of the zero-to-one scale; exact w equals ${weightText}.`,
   );
-  els.workspaceDemSeats.textContent = `${best.demSeats} Democratic ${best.demSeats === 1 ? "seat" : "seats"}`;
-  const republicanSeats = totalSeats - best.demSeats;
+  const resultLabels = {
+    model: "Model result",
+    inspection: "Selected allocation",
+    observed: "FPTP result",
+    proportional: "Proportional target",
+    efficiency: "EG minimum",
+  };
+  const displayedDemSeats = displayedOutcome.demSeats;
+  els.workspaceResultLabel.textContent =
+    resultLabels[diagnosticMode] || getDiagnosticModeLabel(diagnosticMode, w);
+  els.workspaceDemSeats.textContent = `${displayedDemSeats} Democratic ${displayedDemSeats === 1 ? "seat" : "seats"}`;
+  const republicanSeats = totalSeats - displayedDemSeats;
   els.workspaceRepSeats.textContent = `${republicanSeats} Republican ${republicanSeats === 1 ? "seat" : "seats"}`;
+  if (els.houseNavLink) {
+    const houseParams = new URLSearchParams();
+    if (activeState !== CUSTOM_STATE_KEY && Number.isInteger(Number(activeYear))) {
+      houseParams.set("year", String(activeYear));
+    }
+    houseParams.set("w", Number(w).toFixed(6));
+    els.houseNavLink.href = `house.html?${houseParams.toString()}`;
+  }
 
   els.entryScenarioLabel.textContent = scenarioLabel;
   els.entryDataStatus.textContent = metadata.dataStatus;
@@ -6420,13 +6547,13 @@ function renderMap(districts, metrics, outcome, diagnosticMode, comparison, w) {
     const profileFocus = getProfileDistrictFocus(diagnosticMode, district, metrics);
     const assignedLoss = outcome.districtLosses[index];
     const polygonPoints = district.points.map((point) => point.join(",")).join(" ");
-    const tiedDistrict = district.margin < 0.0005;
+    const tiedDistrict = isExactDistrictTie(district);
     const localWinnerVisible = tiedDistrict
       ? `${observedPartyName} · tie rule`
       : observedPartyName;
     const localWinnerAccessible = tiedDistrict
       ? `${observedPartyName} under the displayed tie rule`
-      : `${observedPartyName} by ${formatPoints(district.margin, 1)}`;
+      : `${observedPartyName} by ${formatDistrictWinningMargin(district.margin)}`;
     const qualityFlags = [
       district.proxy ? "proxied race" : "",
       district.largeThirdParty ? "third-party representation above 15 percent" : "",
@@ -6700,9 +6827,9 @@ function showTooltip(event, district, assignedParty, assignedLoss, assignmentLab
   const assignedPartyName = assignedParty === "D" ? "Democratic" : "Republican";
   const observedPartyName = district.winner === "D" ? "Democratic" : "Republican";
   const winnerReading =
-    district.margin < 0.0005
+    isExactDistrictTie(district)
       ? `${observedPartyName} under the displayed tie rule`
-      : `${observedPartyName} by ${formatPoints(district.margin, 1)}`;
+      : `${observedPartyName} by ${formatDistrictWinningMargin(district.margin)}`;
   const voteReading = district.voteCountsAvailable
     ? `D ${formatPercent(district.demShare, 1)} (${formatCompact(
         district.demVotes,
@@ -8945,6 +9072,8 @@ function applySpecification(showStatus, successMessage = "Model updated.") {
     return false;
   }
 
+  const previousFormulas = activeFormulas;
+  const previousCompiledSpec = compiledSpec;
   activeFormulas = formulas;
   compiledSpec = result.compiled;
   clearCandidateInspection();
@@ -8953,7 +9082,14 @@ function applySpecification(showStatus, successMessage = "Model updated.") {
   syncBenchmarkSelection();
   syncTopSpecificationStatus();
   renderActiveSpec();
-  render();
+  if (!render()) {
+    activeFormulas = previousFormulas;
+    compiledSpec = previousCompiledSpec;
+    render();
+    setFormulaStatus("The active model was not changed because the new formulas could not be evaluated safely.", true);
+    hideResultsReturnCue();
+    return false;
+  }
   setFormulaStatus(showStatus ? successMessage : "Model updated.");
   showResultsReturnCue();
   return true;
@@ -8966,15 +9102,19 @@ function compileSpecification(formulas, validationContext = null) {
   Object.keys(specMeta).forEach((key) => {
     try {
       if (key === "districtLoss") {
-        compiled.districtLossA = parseMathExpression(formulas.districtLossA);
-        compiled.districtLossB = parseMathExpression(formulas.districtLossB);
+        compiled.districtLossA = parseMathExpression(
+          getFormulaSource(formulas.districtLossA),
+        );
+        compiled.districtLossB = parseMathExpression(
+          getFormulaSource(formulas.districtLossB),
+        );
         validateCompiledExpression(key, {
           districtLossA: compiled.districtLossA,
           districtLossB: compiled.districtLossB,
         });
         return;
       }
-      compiled[key] = parseMathExpression(formulas[key]);
+      compiled[key] = parseMathExpression(getFormulaSource(formulas[key]));
       validateCompiledExpression(key, compiled[key]);
     } catch (error) {
       errors.push({ key, message: humanizeFormulaError(error) });
@@ -8992,6 +9132,17 @@ function compileSpecification(formulas, validationContext = null) {
   }
 
   return { compiled, errors };
+}
+
+function getFormulaSource(value) {
+  const source = String(value ?? "").trim();
+  if (!source) throw formulaError("Enter a formula before applying the specification.");
+  if (source.length > MAX_FORMULA_SOURCE_LENGTH) {
+    throw formulaError(
+      `Formula source must be ${MAX_FORMULA_SOURCE_LENGTH} characters or fewer.`,
+    );
+  }
+  return source;
 }
 
 function validateCompiledSpecificationForScenario(spec, districts, weight = 0.5) {
@@ -9047,7 +9198,10 @@ function validateCompiledSpecificationForScenario(spec, districts, weight = 0.5)
       const activeWeight = Number.isFinite(Number(weight))
         ? clamp(Number(weight), 0, 1)
         : 0.5;
-      const weights = new Set([0, activeWeight, 1]);
+      const weights = new Set([activeWeight]);
+      for (let index = 0; index <= FORMULA_SCENARIO_WEIGHT_SAMPLES; index += 1) {
+        weights.add(index / FORMULA_SCENARIO_WEIGHT_SAMPLES);
+      }
       weights.forEach((candidateWeight) => {
         frontier.forEach((candidate) => {
           asNonnegativeScalar(
@@ -9906,6 +10060,16 @@ function formatPoints(value, digits = 1) {
   return `${(value * 100).toFixed(digits)} pts`;
 }
 
+function isExactDistrictTie(district) {
+  return Math.abs(Number(district?.demShare) - 0.5) <= 1e-12;
+}
+
+function formatDistrictWinningMargin(value) {
+  const points = Math.abs(Number(value)) * 100;
+  const digits = points < 0.1 ? 3 : points < 1 ? 2 : 1;
+  return formatPoints(Math.abs(Number(value)), digits);
+}
+
 function formatSignedPoints(value, digits = 1) {
   if (Math.abs(value) < 0.0005) return "0.0 pts";
   return `${value > 0 ? "+" : "−"}${formatPoints(Math.abs(value), digits)}`;
@@ -9995,6 +10159,8 @@ if (typeof globalThis !== "undefined") {
     METHODOLOGY_VERSION,
     CUSTOM_DISTRICT_MIN,
     CUSTOM_DISTRICT_MAX,
+    MAX_FORMULA_SOURCE_LENGTH,
+    FORMULA_SCENARIO_WEIGHT_SAMPLES,
     FORMULA_VALIDATION_MAX_DISTRICTS,
     paperLinearSpecification,
     formulaPresets,
@@ -10064,6 +10230,8 @@ if (typeof globalThis !== "undefined") {
     formatAdaptiveWeight,
     formatCompactSwitchWeight,
     formatWeightWithPercent,
+    isExactDistrictTie,
+    formatDistrictWinningMargin,
     csvCell,
     getAdaptiveNonnegativeAxisView,
     getSwitchPivotalDistricts,

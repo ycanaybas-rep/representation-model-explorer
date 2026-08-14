@@ -30,10 +30,10 @@
     <link rel="stylesheet" href="styles.css?v=20260804datasetvisual1" />
     <link rel="stylesheet" href="district-maps.css?v=20260720c" />
     <link rel="stylesheet" href="scholarly-ui.css?v=20260728surface1" />
-    <link rel="stylesheet" href="model-workspace.css?v=20260805refine1" />
+    <link rel="stylesheet" href="model-workspace.css?v=20260814polish1" />
     <link rel="stylesheet" href="model-editorial-system.css?v=20260805refine1" />
-    <link rel="stylesheet" href="final-quality-control.css?v=20260806diagnostics1" />
-    <link rel="stylesheet" href="standalone.css?v=20260814housevisual2" />
+    <link rel="stylesheet" href="final-quality-control.css?v=20260814polish1" />
+    <link rel="stylesheet" href="standalone.css?v=20260814polish1" />
   </head>
   <body data-page="explorer">
     <a class="skip-link" href="#mainContent">Skip to model</a>
@@ -48,7 +48,7 @@
 
         <nav class="primary-nav" aria-label="Primary navigation">
           <a href="./" aria-current="page">State</a>
-          <a href="house.html">House</a>
+          <a id="houseNavLink" href="house.html">House</a>
         </nav>
 
       </div>
@@ -99,6 +99,8 @@
             <a
               class="hero-action hero-action-secondary"
               href="references/representation-in-district-based-elections.pdf"
+              target="_blank"
+              rel="noopener"
               aria-label="Read the complete paper PDF"
             >
               Read the paper
@@ -137,7 +139,7 @@
               >w = 0.500 · 50%</output>
             </span>
             <span>
-              <small>Model result</small>
+              <small id="workspaceResultLabel">Model result</small>
               <strong>
                 <span id="workspaceDemSeats">0 Democratic seats</span>
                 <i aria-hidden="true">·</i>
@@ -447,7 +449,7 @@
             <small id="mapTargetValue">Targeting T(rho) Democratic seats</small>
           </div>
 
-          <div class="map-status-row">
+          <div class="map-status-row" role="status" aria-live="polite" aria-atomic="true">
             <div class="map-primary-result">
               <span id="mapViewLabel" class="eyebrow">Model prediction</span>
               <strong id="mapSeatBadge">0 D / 0 R</strong>
@@ -534,7 +536,7 @@
                   <small>Efficiency-gap benchmark</small>
                 </button>
               </div>
-              <p id="guidedCompareStatus" class="guided-compare-status" role="status" aria-live="polite">The map shows the model allocation.</p>
+              <p id="guidedCompareStatus" class="guided-compare-status sr-only" role="status" aria-live="polite">The map shows the model allocation.</p>
             </section>
 
             <section id="diagnostics" class="headline-diagnostics anchor-section" aria-labelledby="headlineMetricsTitle">
@@ -966,7 +968,7 @@
                 <select id="aggregationPreset"></select>
               </div>
               <p id="aggregationPresetNote" class="preset-note"></p>
-              <textarea id="formulaAggregation" rows="2" spellcheck="false" aria-label="Total aggregation function TeX"></textarea>
+              <textarea id="formulaAggregation" rows="2" maxlength="256" spellcheck="false" aria-label="Total aggregation function TeX"></textarea>
               <div id="previewAggregation" class="formula-preview" aria-label="Rendered total aggregation formula"></div>
               <p id="errorAggregation" class="formula-error" hidden></p>
             </article>
@@ -980,7 +982,7 @@
                 <select id="stateTargetPreset"></select>
               </div>
               <p id="stateTargetPresetNote" class="preset-note"></p>
-              <textarea id="formulaStateTarget" rows="2" spellcheck="false" aria-label="Statewide target TeX"></textarea>
+              <textarea id="formulaStateTarget" rows="2" maxlength="256" spellcheck="false" aria-label="Statewide target TeX"></textarea>
               <div id="previewStateTarget" class="formula-preview" aria-label="Rendered statewide target formula"></div>
               <p id="errorStateTarget" class="formula-error" hidden></p>
             </article>
@@ -997,11 +999,11 @@
               <div class="district-branch-fields">
                 <label>
                   <span>δ(1, p)</span>
-                  <textarea id="formulaDistrictLossA" rows="2" spellcheck="false" aria-label="District loss when party A receives the district, in TeX"></textarea>
+                  <textarea id="formulaDistrictLossA" rows="2" maxlength="256" spellcheck="false" aria-label="District loss when party A receives the district, in TeX"></textarea>
                 </label>
                 <label>
                   <span>δ(0, p)</span>
-                  <textarea id="formulaDistrictLossB" rows="2" spellcheck="false" aria-label="District loss when party B receives the district, in TeX"></textarea>
+                  <textarea id="formulaDistrictLossB" rows="2" maxlength="256" spellcheck="false" aria-label="District loss when party B receives the district, in TeX"></textarea>
                 </label>
               </div>
               <div id="previewDistrictLoss" class="formula-preview" aria-label="Rendered district loss formula"></div>
@@ -1017,7 +1019,7 @@
                 <select id="stateLossPreset"></select>
               </div>
               <p id="stateLossPresetNote" class="preset-note"></p>
-              <textarea id="formulaStateLoss" rows="2" spellcheck="false" aria-label="Statewide loss TeX"></textarea>
+              <textarea id="formulaStateLoss" rows="2" maxlength="256" spellcheck="false" aria-label="Statewide loss TeX"></textarea>
               <div id="previewStateLoss" class="formula-preview" aria-label="Rendered statewide loss formula"></div>
               <p id="errorStateLoss" class="formula-error" hidden></p>
             </article>
@@ -1488,7 +1490,7 @@
             <span class="eyebrow">About the explorer</span>
             <h2 id="modelNotesTitle">Data, definitions, and methodology</h2>
           </div>
-          <a class="text-link" href="references/representation-in-district-based-elections.pdf">Download the paper</a>
+          <a class="text-link" href="references/representation-in-district-based-elections.pdf" download>Download the paper</a>
         </header>
 
         <div class="standalone-notes-grid">
@@ -1523,7 +1525,7 @@
             <p>
               The model balances district outcomes with statewide representation. At <i>w</i> = 0,
               district results determine the delegation; as <i>w</i> rises, the statewide target
-              matters more. See <a class="text-link" href="references/representation-in-district-based-elections.pdf">the paper</a>
+              matters more. See <a class="text-link" href="references/representation-in-district-based-elections.pdf" target="_blank" rel="noopener">the paper</a>
               for the full model and assumptions.
             </p>
           </article>
@@ -1638,8 +1640,8 @@
     </footer>
 
     <script src="vendor/katex/katex.min.js" defer></script>
-    <script src="site.js?v=20260720c" defer></script>
+    <script src="site.js?v=20260814polish1" defer></script>
     <script src="election-data.js?v=20260804dataset1" defer></script>
-    <script src="script.js?v=20260814weightpercent1" defer></script>
+    <script src="script.js?v=20260814polish1" defer></script>
   </body>
 </html>
