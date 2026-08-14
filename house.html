@@ -28,7 +28,7 @@
     <link rel="apple-touch-icon" href="apple-touch-icon-two-party-v2.png?v=20260728brand2" />
     <link rel="stylesheet" href="styles.css?v=20260804datasetvisual1" />
     <link rel="stylesheet" href="scholarly-ui.css?v=20260728surface1" />
-    <link rel="stylesheet" href="house.css?v=20260814fixed1" />
+    <link rel="stylesheet" href="house.css?v=20260814fixedcolors1" />
     <link rel="stylesheet" href="final-quality-control.css?v=20260814polish1" />
     <link rel="stylesheet" href="standalone.css?v=20260814home1" />
   </head>
@@ -167,11 +167,13 @@
             <span class="house-chamber-dais" aria-hidden="true"></span>
           </div>
           <div class="house-chamber-legend" aria-label="House chamber legend">
-            <span><i class="is-dem" aria-hidden="true"></i>Democratic</span>
-            <span><i class="is-rep" aria-hidden="true"></i>Republican</span>
-            <span id="houseOtherLegend" hidden><i class="is-other" aria-hidden="true"></i>Independent</span>
+            <span><i class="is-dem" aria-hidden="true"></i>Modeled Democratic</span>
+            <span><i class="is-dem is-fixed-dem" aria-hidden="true"></i>Fixed Democratic</span>
+            <span><i class="is-rep" aria-hidden="true"></i>Modeled Republican</span>
+            <span><i class="is-rep is-fixed-rep" aria-hidden="true"></i>Fixed Republican</span>
+            <span id="houseOtherLegend" hidden><i class="is-other" aria-hidden="true"></i>Fixed Independent</span>
           </div>
-          <p class="house-chamber-note">All 435 seats are assigned. The semicircle shows party composition, not member seating or geography.</p>
+          <p class="house-chamber-note">All 435 seats are assigned. Lighter, outlined Democratic and Republican seats are fixed outside the panel; solid seats follow the model. Positions show composition, not member seating or geography.</p>
 
           <div class="house-vote-seat-band">
             <div class="house-vote-share is-dem">
@@ -277,6 +279,6 @@
     <script src="site.js?v=20260814polish1" defer></script>
     <script src="election-data.js?v=20260804dataset1" defer></script>
     <script src="script.js?v=20260814polish1" defer></script>
-    <script src="house.js?v=20260814fixed1" defer></script>
+    <script src="house.js?v=20260814fixedcolors1" defer></script>
   </body>
 </html>

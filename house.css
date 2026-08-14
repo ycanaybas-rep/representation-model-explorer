@@ -1,8 +1,10 @@
 :root {
   --house-dem: var(--dem, #557fae);
   --house-dem-deep: #345f8d;
+  --house-dem-fixed: #b7cce0;
   --house-rep: var(--rep, #c96868);
   --house-rep-deep: #9d3f3f;
+  --house-rep-fixed: #e7b9b7;
   --house-paper: var(--panel, #fffefa);
   --house-soft: var(--panel-soft, #f3f0e8);
 }
@@ -494,6 +496,20 @@ body[data-page="house"] :is(a, button, input, select, [tabindex]):focus-visible 
   background: var(--house-rep);
 }
 
+.house-seat.is-dem.is-fixed-dem {
+  background: var(--house-dem-fixed);
+  box-shadow:
+    inset 0 0 0 1px var(--house-dem-deep),
+    0 1px 3px rgba(23, 35, 31, 0.22);
+}
+
+.house-seat.is-rep.is-fixed-rep {
+  background: var(--house-rep-fixed);
+  box-shadow:
+    inset 0 0 0 1px var(--house-rep-deep),
+    0 1px 3px rgba(23, 35, 31, 0.22);
+}
+
 .house-chamber-dais {
   position: absolute;
   z-index: 1;
@@ -541,6 +557,16 @@ body[data-page="house"] :is(a, button, input, select, [tabindex]):focus-visible 
 
 .house-chamber-legend i.is-rep {
   background: var(--house-rep);
+}
+
+.house-chamber-legend i.is-dem.is-fixed-dem {
+  background: var(--house-dem-fixed);
+  box-shadow: inset 0 0 0 1px var(--house-dem-deep);
+}
+
+.house-chamber-legend i.is-rep.is-fixed-rep {
+  background: var(--house-rep-fixed);
+  box-shadow: inset 0 0 0 1px var(--house-rep-deep);
 }
 
 .house-chamber-legend i.is-other {

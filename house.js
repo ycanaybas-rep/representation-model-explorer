@@ -309,6 +309,28 @@
     });
   }
 
+  function getChamberSeatCategory(index, snapshot, yearModel) {
+    const seatIndex = Number(index);
+    if (
+      !Number.isInteger(seatIndex) ||
+      seatIndex < 0 ||
+      seatIndex >= FULL_HOUSE_SEATS
+    ) {
+      throw new RangeError(`House seat index must be between 0 and ${FULL_HOUSE_SEATS - 1}.`);
+    }
+
+    const fixedDemocraticEnd = yearModel.outsideDemSeats;
+    const democraticEnd = snapshot.fullDemSeats;
+    const republicanStart = FULL_HOUSE_SEATS - snapshot.fullRepSeats;
+    const fixedRepublicanStart = FULL_HOUSE_SEATS - yearModel.outsideRepSeats;
+
+    if (seatIndex < fixedDemocraticEnd) return "fixed-dem";
+    if (seatIndex < democraticEnd) return "modeled-dem";
+    if (seatIndex < republicanStart) return "fixed-other";
+    if (seatIndex < fixedRepublicanStart) return "modeled-rep";
+    return "fixed-rep";
+  }
+
   function buildHouseSeatShareSeries(yearModel) {
     const eventGroups = yearModel.switchGroups.filter(
       (group) => Number.isFinite(group.weight) && group.weight > 0 && group.weight < 1,
@@ -925,21 +947,26 @@
       elements.houseOtherLegend.hidden = snapshot.fullOtherSeats === 0;
       elements.housePanelSeatSummary.setAttribute(
         "aria-label",
-        `${snapshot.year} House at ${formatWeightWithPercent(snapshot.weight, engine)}: ${snapshot.fullDemSeats} Democratic seats, ${snapshot.fullRepSeats} Republican seats, and ${snapshot.fullOtherSeats} Independent seats. ${activeYearModel.uncoveredSeats} outside-panel assignments remain fixed.`,
+        `${snapshot.year} House at ${formatWeightWithPercent(snapshot.weight, engine)}: ${snapshot.fullDemSeats} Democratic seats, ${snapshot.fullRepSeats} Republican seats, and ${snapshot.fullOtherSeats} Independent seats. The fixed outside-panel seats include ${activeYearModel.outsideDemSeats} Democratic, ${activeYearModel.outsideRepSeats} Republican, and ${activeYearModel.outsideOtherSeats} Independent seats.`,
       );
       elements.houseChamberSeats.setAttribute(
         "aria-label",
-        `${snapshot.fullDemSeats} Democratic, ${snapshot.fullRepSeats} Republican, and ${snapshot.fullOtherSeats} Independent seats across all 435 House positions. The ${activeYearModel.totalSeats} covered seats follow the model; ${activeYearModel.uncoveredSeats} outside-panel assignments remain fixed. Seats are arranged for composition only, not member seating or geography.`,
+        `${snapshot.fullDemSeats} Democratic, ${snapshot.fullRepSeats} Republican, and ${snapshot.fullOtherSeats} Independent seats across all 435 House positions. The modeled panel contains ${snapshot.demSeats} Democratic and ${snapshot.repSeats} Republican seats. Fixed outside-panel assignments contain ${activeYearModel.outsideDemSeats} Democratic, ${activeYearModel.outsideRepSeats} Republican, and ${activeYearModel.outsideOtherSeats} Independent seats. Seats are arranged for composition only, not member seating or geography.`,
       );
-      const otherStart = snapshot.fullDemSeats;
-      const republicanStart = FULL_HOUSE_SEATS - snapshot.fullRepSeats;
       chamberSeats.forEach((seat, index) => {
-        seat.classList.toggle("is-dem", index < otherStart);
-        seat.classList.toggle("is-rep", index >= republicanStart);
+        const category = getChamberSeatCategory(index, snapshot, activeYearModel);
+        seat.dataset.seatCategory = category;
         seat.classList.toggle(
-          "is-other",
-          index >= otherStart && index < republicanStart,
+          "is-dem",
+          category === "modeled-dem" || category === "fixed-dem",
         );
+        seat.classList.toggle(
+          "is-rep",
+          category === "modeled-rep" || category === "fixed-rep",
+        );
+        seat.classList.toggle("is-other", category === "fixed-other");
+        seat.classList.toggle("is-fixed-dem", category === "fixed-dem");
+        seat.classList.toggle("is-fixed-rep", category === "fixed-rep");
       });
 
       elements.houseDistrictsChanged.textContent = String(snapshot.flips);
@@ -982,6 +1009,7 @@
     computeMajorityInversion,
     distributeSeats,
     buildChamberSeatLayout,
+    getChamberSeatCategory,
     buildHouseSeatShareSeries,
     getSeatShareChartDomain,
     getAdjacentCompositionWeight,
