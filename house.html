@@ -16,7 +16,7 @@
     <meta property="og:title" content="House Explorer | Districts to Delegations" />
     <meta
       property="og:description"
-      content="Apply one shared representation weight across covered state elections and watch the modeled House panel change."
+      content="Apply one shared representation weight across covered state elections and watch the 435-seat House composition change."
     />
     <meta property="og:url" content="https://representation.yunusaybas.com/house.html" />
     <meta
@@ -28,7 +28,7 @@
     <link rel="apple-touch-icon" href="apple-touch-icon-two-party-v2.png?v=20260728brand2" />
     <link rel="stylesheet" href="styles.css?v=20260804datasetvisual1" />
     <link rel="stylesheet" href="scholarly-ui.css?v=20260728surface1" />
-    <link rel="stylesheet" href="house.css?v=20260814polish1" />
+    <link rel="stylesheet" href="house.css?v=20260814fixed1" />
     <link rel="stylesheet" href="final-quality-control.css?v=20260814polish1" />
     <link rel="stylesheet" href="standalone.css?v=20260814home1" />
   </head>
@@ -61,16 +61,16 @@
       <section class="house-intro" aria-labelledby="housePageTitle">
         <div class="house-intro-copy">
           <span class="eyebrow">House Explorer</span>
-          <h1 id="housePageTitle">Move one weight. Watch the modeled House panel change.</h1>
+          <h1 id="housePageTitle">Move one weight. Watch the House change.</h1>
           <p>
             Apply the same statewide weight to every covered state. Each state delegation is solved
-            separately under <a class="house-inline-paper" href="references/representation-in-district-based-elections.pdf" target="_blank" rel="noopener">the paper’s linear benchmark</a>, then the seat totals are added together.
+            separately under <a class="house-inline-paper" href="references/representation-in-district-based-elections.pdf" target="_blank" rel="noopener">the paper’s linear benchmark</a>. Seats outside the panel keep their observed election assignments as <i>w</i> changes.
           </p>
         </div>
         <aside class="house-scope-card" aria-label="House Explorer scope">
           <span>Data coverage</span>
           <strong id="houseCoverageHeadline">Loading the election panel…</strong>
-          <small>Covered states only · not an official full-House result</small>
+          <small>Covered states are modeled · remaining seats stay fixed</small>
         </aside>
       </section>
 
@@ -133,8 +133,8 @@
         <article class="house-chamber-card">
           <header class="house-chamber-heading">
             <div>
-              <span class="eyebrow">Modeled panel composition</span>
-              <h2 id="houseCompositionTitle">Covered House seats at this weight</h2>
+              <span class="eyebrow">House composition</span>
+              <h2 id="houseCompositionTitle">House seats at this weight</h2>
             </div>
             <span id="houseLiveStatus" class="house-live-status" aria-hidden="true">Updates with w</span>
           </header>
@@ -151,22 +151,27 @@
               <strong id="houseRepSeats">—</strong>
               <small>seats</small>
             </div>
+            <div id="houseOtherSeatSummary" class="house-other-total" hidden>
+              <span>Independent</span>
+              <strong id="houseOtherSeats">—</strong>
+              <small>fixed seats</small>
+            </div>
           </div>
 
           <div
             id="houseChamberSeats"
             class="house-chamber"
             role="img"
-            aria-label="Loading the modeled House panel composition"
+            aria-label="Loading the House composition"
           >
             <span class="house-chamber-dais" aria-hidden="true"></span>
           </div>
           <div class="house-chamber-legend" aria-label="House chamber legend">
             <span><i class="is-dem" aria-hidden="true"></i>Democratic</span>
             <span><i class="is-rep" aria-hidden="true"></i>Republican</span>
-            <span><i class="is-uncovered" aria-hidden="true"></i>Outside the panel</span>
+            <span id="houseOtherLegend" hidden><i class="is-other" aria-hidden="true"></i>Independent</span>
           </div>
-          <p class="house-chamber-note">All 435 positions are shown. The semicircle shows composition, not member seating or geography.</p>
+          <p class="house-chamber-note">All 435 seats are assigned. The semicircle shows party composition, not member seating or geography.</p>
 
           <div class="house-vote-seat-band">
             <div class="house-vote-share is-dem">
@@ -200,7 +205,7 @@
             <div class="house-coverage-track" aria-hidden="true">
               <span id="houseCoverageBar"></span>
             </div>
-            <p id="houseUncoveredSeats">Seats outside the panel are not assigned to either party here.</p>
+            <p id="houseUncoveredSeats">Loading the fixed outside-panel assignments…</p>
           </div>
         </article>
 
@@ -208,13 +213,13 @@
           <article class="house-summary-card">
             <span>District-plurality baseline</span>
             <strong id="houseFptpSeats">—</strong>
-            <p>Covered districts assigned to their local vote winner.</p>
+            <p>Observed district winners across all 435 seats.</p>
           </article>
 
           <article class="house-summary-card">
             <span>State proportional target</span>
             <strong id="houseProportionalSeats">—</strong>
-            <p>Nearest whole-seat proportional target in each state, then summed.</p>
+            <p>Covered states at their nearest whole-seat targets; outside seats remain fixed.</p>
           </article>
 
           <article class="house-summary-card">
@@ -229,7 +234,7 @@
         <header class="house-trajectory-heading">
           <div>
             <span class="eyebrow">Across the full weight range</span>
-            <h2 id="houseTrajectoryTitle">Democratic share of covered House seats</h2>
+            <h2 id="houseTrajectoryTitle">Democratic share of all 435 House seats</h2>
           </div>
           <p id="houseTrajectoryReading">Loading the seat-share path…</p>
         </header>
@@ -248,8 +253,8 @@
             aria-labelledby="houseTrajectorySvgTitle"
             aria-describedby="houseTrajectoryDescription"
           >
-            <title id="houseTrajectorySvgTitle">Democratic share of covered House seats by statewide weight</title>
-            <desc id="houseTrajectoryDescription">The step line shows the modeled Democratic seat share from w equals zero through one. A marker identifies the selected weight.</desc>
+            <title id="houseTrajectorySvgTitle">Democratic share of all 435 House seats by statewide weight</title>
+            <desc id="houseTrajectoryDescription">The step line shows the Democratic share of all 435 seats from w equals zero through one. Outside-panel assignments remain fixed, and a marker identifies the selected weight.</desc>
           </svg>
         </div>
         <p id="houseChartScale" class="house-chart-scale-note">Focused vertical scale will appear after the year loads.</p>
@@ -265,13 +270,13 @@
             <strong>Districts to Delegations</strong>
           </div>
         </div>
-        <p>Modeled panel totals use covered states only; omitted seats remain unassigned.</p>
+        <p>Covered states follow the model; outside-panel seats keep their observed election assignments.</p>
       </div>
     </footer>
 
     <script src="site.js?v=20260814polish1" defer></script>
     <script src="election-data.js?v=20260804dataset1" defer></script>
     <script src="script.js?v=20260814polish1" defer></script>
-    <script src="house.js?v=20260814polish1" defer></script>
+    <script src="house.js?v=20260814fixed1" defer></script>
   </body>
 </html>

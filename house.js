@@ -2,6 +2,23 @@
 
 (() => {
   const FULL_HOUSE_SEATS = 435;
+  // Observed election assignments for districts outside the bundled state panel.
+  // These seats remain fixed while w changes the covered state delegations.
+  const OUTSIDE_PANEL_SEATS_BY_YEAR = Object.freeze({
+    2000: Object.freeze({ demSeats: 42, repSeats: 71, otherSeats: 2 }),
+    2002: Object.freeze({ demSeats: 53, repSeats: 75, otherSeats: 1 }),
+    2004: Object.freeze({ demSeats: 37, repSeats: 59, otherSeats: 1 }),
+    2006: Object.freeze({ demSeats: 47, repSeats: 50, otherSeats: 0 }),
+    2008: Object.freeze({ demSeats: 53, repSeats: 44, otherSeats: 0 }),
+    2010: Object.freeze({ demSeats: 36, repSeats: 61, otherSeats: 0 }),
+    2012: Object.freeze({ demSeats: 73, repSeats: 78, otherSeats: 0 }),
+    2014: Object.freeze({ demSeats: 30, repSeats: 68, otherSeats: 0 }),
+    2016: Object.freeze({ demSeats: 32, repSeats: 66, otherSeats: 0 }),
+    2018: Object.freeze({ demSeats: 41, repSeats: 57, otherSeats: 0 }),
+    2020: Object.freeze({ demSeats: 35, repSeats: 63, otherSeats: 0 }),
+    2022: Object.freeze({ demSeats: 47, repSeats: 71, otherSeats: 0 }),
+    2024: Object.freeze({ demSeats: 34, repSeats: 58, otherSeats: 0 }),
+  });
   const DEFAULT_WEIGHT = 0;
   const SWITCH_TOLERANCE = 1e-10;
   const CHAMBER_ROWS = 12;
@@ -80,6 +97,27 @@
       (total, state) => total + state.quality.largeThirdParty,
       0,
     );
+    const outsideAssignments = OUTSIDE_PANEL_SEATS_BY_YEAR[numericYear];
+    if (!outsideAssignments) {
+      throw new Error(`Outside-panel House assignments are unavailable for ${numericYear}.`);
+    }
+    if (
+      !Object.values(outsideAssignments).every(
+        (value) => Number.isInteger(value) && value >= 0,
+      )
+    ) {
+      throw new Error(`${numericYear} outside-panel assignments must be nonnegative integers.`);
+    }
+    const uncoveredSeats = FULL_HOUSE_SEATS - totalSeats;
+    const assignedOutsideSeats =
+      outsideAssignments.demSeats +
+      outsideAssignments.repSeats +
+      outsideAssignments.otherSeats;
+    if (assignedOutsideSeats !== uncoveredSeats) {
+      throw new Error(
+        `${numericYear} outside-panel assignments cover ${assignedOutsideSeats} seats; expected ${uncoveredSeats}.`,
+      );
+    }
 
     return {
       engine,
@@ -88,13 +126,26 @@
       states,
       stateCount: states.length,
       totalSeats,
-      uncoveredSeats: Math.max(0, FULL_HOUSE_SEATS - totalSeats),
+      coveredSeats: totalSeats,
+      uncoveredSeats,
+      outsideDemSeats: outsideAssignments.demSeats,
+      outsideRepSeats: outsideAssignments.repSeats,
+      outsideOtherSeats: outsideAssignments.otherSeats,
       demSupport: totalRho / totalSeats,
       repSupport: 1 - totalRho / totalSeats,
       fptpDemSeats,
       fptpRepSeats: totalSeats - fptpDemSeats,
       proportionalDemSeats,
       proportionalRepSeats: totalSeats - proportionalDemSeats,
+      fullFptpDemSeats: fptpDemSeats + outsideAssignments.demSeats,
+      fullFptpRepSeats:
+        totalSeats - fptpDemSeats + outsideAssignments.repSeats,
+      fullProportionalDemSeats:
+        proportionalDemSeats + outsideAssignments.demSeats,
+      fullProportionalRepSeats:
+        totalSeats - proportionalDemSeats + outsideAssignments.repSeats,
+      fullFptpOtherSeats: outsideAssignments.otherSeats,
+      fullProportionalOtherSeats: outsideAssignments.otherSeats,
       proxyCount,
       largeThirdPartyCount,
       switchGroups: buildSwitchGroups(states),
@@ -170,25 +221,38 @@
       };
     });
 
-    const demSeats = stateResults.reduce((total, state) => total + state.demSeats, 0);
-    const repSeats = yearModel.totalSeats - demSeats;
+    const coveredDemSeats = stateResults.reduce(
+      (total, state) => total + state.demSeats,
+      0,
+    );
+    const coveredRepSeats = yearModel.totalSeats - coveredDemSeats;
+    const fullDemSeats = coveredDemSeats + yearModel.outsideDemSeats;
+    const fullRepSeats = coveredRepSeats + yearModel.outsideRepSeats;
+    const fullOtherSeats = yearModel.outsideOtherSeats;
     const flips = stateResults.reduce((total, state) => total + state.flips, 0);
-    const seatShare = demSeats / yearModel.totalSeats;
-    const seatSupportGap = seatShare - yearModel.demSupport;
-    const efficiencyGap = seatShare - 2 * yearModel.demSupport + 0.5;
+    const coveredSeatShare = coveredDemSeats / yearModel.totalSeats;
+    const seatSupportGap = coveredSeatShare - yearModel.demSupport;
+    const efficiencyGap = coveredSeatShare - 2 * yearModel.demSupport + 0.5;
     const majorityInversion = computeMajorityInversion(
       yearModel.demSupport,
-      seatShare,
+      coveredSeatShare,
     );
 
     return {
       year: yearModel.year,
       weight: w,
       totalSeats: yearModel.totalSeats,
-      demSeats,
-      repSeats,
-      demSeatShare: seatShare,
-      repSeatShare: 1 - seatShare,
+      demSeats: coveredDemSeats,
+      repSeats: coveredRepSeats,
+      demSeatShare: coveredSeatShare,
+      repSeatShare: 1 - coveredSeatShare,
+      fullHouseSeats: FULL_HOUSE_SEATS,
+      fullDemSeats,
+      fullRepSeats,
+      fullOtherSeats,
+      fullDemSeatShare: fullDemSeats / FULL_HOUSE_SEATS,
+      fullRepSeatShare: fullRepSeats / FULL_HOUSE_SEATS,
+      fullOtherSeatShare: fullOtherSeats / FULL_HOUSE_SEATS,
       demSupport: yearModel.demSupport,
       repSupport: yearModel.repSupport,
       seatSupportGap,
@@ -258,8 +322,8 @@
         start,
         end,
         sampleWeight,
-        demSeats: snapshot.demSeats,
-        demSeatShare: snapshot.demSeatShare,
+        demSeats: snapshot.fullDemSeats,
+        demSeatShare: snapshot.fullDemSeatShare,
       };
     });
     const events = eventGroups.map((group, index) => {
@@ -268,7 +332,7 @@
         weight: group.weight,
         states: group.states.map((item) => ({ ...item })),
         beforeDemSeats: regimes[index].demSeats,
-        exactDemSeats: exact.demSeats,
+        exactDemSeats: exact.fullDemSeats,
         afterDemSeats: regimes[index + 1].demSeats,
       };
     });
@@ -281,25 +345,27 @@
       ]),
       { weight: 1, demSeatShare: regimes.at(-1).demSeatShare },
     ];
-    if (Math.abs(endpoint.demSeatShare - vertices.at(-1).demSeatShare) > 1e-12) {
-      vertices.push({ weight: 1, demSeatShare: endpoint.demSeatShare });
+    if (Math.abs(endpoint.fullDemSeatShare - vertices.at(-1).demSeatShare) > 1e-12) {
+      vertices.push({ weight: 1, demSeatShare: endpoint.fullDemSeatShare });
     }
-    const shares = [
-      ...regimes.map((regime) => regime.demSeatShare),
-      ...events.map((event) => event.exactDemSeats / yearModel.totalSeats),
-      endpoint.demSeatShare,
+    const demSeatCounts = [
+      ...regimes.map((regime) => regime.demSeats),
+      ...events.map((event) => event.exactDemSeats),
+      endpoint.fullDemSeats,
     ];
+    const shares = demSeatCounts.map((seats) => seats / FULL_HOUSE_SEATS);
     return {
-      totalSeats: yearModel.totalSeats,
+      totalSeats: FULL_HOUSE_SEATS,
+      coveredSeats: yearModel.totalSeats,
       regimes,
       events,
       vertices,
       endpoint: {
-        demSeats: endpoint.demSeats,
-        demSeatShare: endpoint.demSeatShare,
+        demSeats: endpoint.fullDemSeats,
+        demSeatShare: endpoint.fullDemSeatShare,
       },
-      minDemSeats: Math.min(...shares.map((share) => Math.round(share * yearModel.totalSeats))),
-      maxDemSeats: Math.max(...shares.map((share) => Math.round(share * yearModel.totalSeats))),
+      minDemSeats: Math.min(...demSeatCounts),
+      maxDemSeats: Math.max(...demSeatCounts),
       minDemSeatShare: Math.min(...shares),
       maxDemSeatShare: Math.max(...shares),
     };
@@ -344,8 +410,20 @@
     return clampWeight((lower + upper) / 2);
   }
 
-  function formatComposition(demSeats, totalSeats) {
-    return `${demSeats} D / ${totalSeats - demSeats} R`;
+  function formatComposition(demSeats, repSeats, otherSeats = 0) {
+    const majorParties = `${demSeats} D / ${repSeats} R`;
+    return otherSeats ? `${majorParties} / ${otherSeats} Independent` : majorParties;
+  }
+
+  function formatOutsideAssignments(model) {
+    const assignments = [
+      `${model.outsideDemSeats} Democratic`,
+      `${model.outsideRepSeats} Republican`,
+    ];
+    if (model.outsideOtherSeats) {
+      assignments.push(`${model.outsideOtherSeats} Independent`);
+    }
+    return `${model.uncoveredSeats} seats are outside this year’s panel (${assignments.join(", ")}). Their assignments do not change with w.`;
   }
 
   function formatPercent(value, digits = 1) {
@@ -419,6 +497,9 @@
       "housePanelSeatSummary",
       "houseDemSeats",
       "houseRepSeats",
+      "houseOtherSeatSummary",
+      "houseOtherSeats",
+      "houseOtherLegend",
       "houseChamberSeats",
       "houseCompositionBar",
       "houseDemBar",
@@ -516,11 +597,11 @@
     function renderYearInputs() {
       const model = activeYearModel;
       elements.houseYearSelect.value = String(model.year);
-      elements.houseCoverageHeadline.textContent = `${model.stateCount} states · ${model.totalSeats} of 435 seats`;
+      elements.houseCoverageHeadline.textContent = `${model.totalSeats} modeled seats · ${model.uncoveredSeats} fixed seats`;
       elements.houseCoverageDetail.textContent = formatCoverageDetail(model);
       elements.houseCoverageValue.textContent = `${model.totalSeats} of ${FULL_HOUSE_SEATS} seats`;
       elements.houseCoverageBar.style.width = `${(model.totalSeats / FULL_HOUSE_SEATS) * 100}%`;
-      elements.houseUncoveredSeats.textContent = `${model.uncoveredSeats} seats are outside this year’s panel and remain unassigned here.`;
+      elements.houseUncoveredSeats.textContent = formatOutsideAssignments(model);
       elements.houseDemVoteShare.textContent = formatPercent(model.demSupport, 1);
       elements.houseRepVoteShare.textContent = formatPercent(model.repSupport, 1);
       elements.houseCompositionBar.setAttribute(
@@ -530,12 +611,14 @@
       elements.houseDemBar.style.width = `${model.demSupport * 100}%`;
       elements.houseRepBar.style.width = `${model.repSupport * 100}%`;
       elements.houseFptpSeats.textContent = formatComposition(
-        model.fptpDemSeats,
-        model.totalSeats,
+        model.fullFptpDemSeats,
+        model.fullFptpRepSeats,
+        model.fullFptpOtherSeats,
       );
       elements.houseProportionalSeats.textContent = formatComposition(
-        model.proportionalDemSeats,
-        model.totalSeats,
+        model.fullProportionalDemSeats,
+        model.fullProportionalRepSeats,
+        model.fullProportionalOtherSeats,
       );
       renderSwitchMarkers(model.switchGroups);
       chamberSeats = renderChamberStructure();
@@ -610,10 +693,10 @@
         margin.top + ((domain.max - share) / (domain.max - domain.min)) * plotHeight;
       const title = svg.querySelector("title") || createSvgElement("title");
       title.id = "houseTrajectorySvgTitle";
-      title.textContent = `Democratic share of ${series.totalSeats} covered House seats by statewide weight`;
+      title.textContent = "Democratic share of all 435 House seats by statewide weight";
       const description = elements.houseTrajectoryDescription;
       const rangeText = `${formatPercent(series.minDemSeatShare, 1)} to ${formatPercent(series.maxDemSeatShare, 1)}`;
-      description.textContent = `Focused vertical scale. The step line shows the modeled Democratic share of ${series.totalSeats} covered House seats as w changes from zero to one. There are ${series.events.length} switching points and the share ranges from ${rangeText}.`;
+      description.textContent = `Focused vertical scale. The step line shows the Democratic share of all 435 House seats as w changes from zero to one. Outside-panel assignments remain fixed. There are ${series.events.length} switching points and the share ranges from ${rangeText}.`;
       elements.houseChartScale.textContent = `Focused vertical scale: ${formatPercent(domain.min, 1)}–${formatPercent(domain.max, 1)}.`;
 
       const grid = createSvgElement("g", { class: "house-chart-grid" });
@@ -639,21 +722,22 @@
         grid.append(label);
       });
 
-      if (domain.min <= 0.5 && domain.max >= 0.5) {
+      const majorityShare = (Math.floor(FULL_HOUSE_SEATS / 2) + 1) / FULL_HOUSE_SEATS;
+      if (domain.min <= majorityShare && domain.max >= majorityShare) {
         const majority = createSvgElement("g", { class: "house-chart-majority" });
         majority.append(
           createSvgElement("line", {
             x1: margin.left,
             x2: width - margin.right,
-            y1: y(0.5),
-            y2: y(0.5),
+            y1: y(majorityShare),
+            y2: y(majorityShare),
           }),
         );
         const label = createSvgElement("text", {
           x: width - margin.right - 4,
-          y: y(0.5) - 8,
+          y: y(majorityShare) - 8,
         });
-        label.textContent = "50% majority";
+        label.textContent = "218-seat majority";
         majority.append(label);
         grid.append(majority);
       }
@@ -698,7 +782,7 @@
         class: "house-chart-axis-title house-chart-y-title",
         transform: `rotate(-90 18 ${margin.top + plotHeight / 2})`,
       });
-      yLabel.textContent = "Democratic share of covered seats";
+      yLabel.textContent = "Democratic share of all 435 seats";
       axes.append(xLabel, yLabel);
 
       const pathData = series.vertices
@@ -748,7 +832,7 @@
       const x = margin.left + snapshot.weight * plotWidth;
       const y =
         margin.top +
-        ((activeChartDomain.max - snapshot.demSeatShare) /
+        ((activeChartDomain.max - snapshot.fullDemSeatShare) /
           (activeChartDomain.max - activeChartDomain.min)) *
           plotHeight;
       const guide = elements.houseSeatShareChart.querySelector("#houseChartCurrentGuide");
@@ -758,8 +842,8 @@
       point?.setAttribute("cx", String(x));
       point?.setAttribute("cy", String(y));
       const formattedWeight = formatWeightWithPercent(snapshot.weight, engine);
-      elements.houseTrajectoryReading.textContent = `At ${formattedWeight}, Democrats hold ${snapshot.demSeats} of ${snapshot.totalSeats} covered seats (${formatPercent(snapshot.demSeatShare, 1)}).`;
-      elements.houseTrajectoryDescription.textContent = `The step line shows the modeled Democratic share of ${snapshot.totalSeats} covered House seats as w changes from zero to one. At ${formattedWeight}, Democrats hold ${snapshot.demSeats} seats, or ${formatPercent(snapshot.demSeatShare, 1)}. The focused vertical scale runs from ${formatPercent(activeChartDomain.min, 1)} to ${formatPercent(activeChartDomain.max, 1)}.`;
+      elements.houseTrajectoryReading.textContent = `At ${formattedWeight}, Democrats hold ${snapshot.fullDemSeats} of 435 seats (${formatPercent(snapshot.fullDemSeatShare, 1)}).`;
+      elements.houseTrajectoryDescription.textContent = `The step line shows the Democratic share of all 435 House seats as w changes from zero to one. At ${formattedWeight}, Democrats hold ${snapshot.fullDemSeats} seats, or ${formatPercent(snapshot.fullDemSeatShare, 1)}. Outside-panel assignments remain fixed. The focused vertical scale runs from ${formatPercent(activeChartDomain.min, 1)} to ${formatPercent(activeChartDomain.max, 1)}.`;
       elements.houseSeatShareChart.removeAttribute("aria-label");
     }
 
@@ -781,7 +865,7 @@
       const weight = clampWeight(elements.houseWeight.value);
       elements.houseWeight.value = String(weight);
       activeSnapshot = computeHouseSnapshot(activeYearModel, weight);
-      const compositionKey = `${activeSnapshot.demSeats}-${activeSnapshot.repSeats}-${activeSnapshot.stateResults
+      const compositionKey = `${activeSnapshot.fullDemSeats}-${activeSnapshot.fullRepSeats}-${activeSnapshot.fullOtherSeats}-${activeSnapshot.stateResults
         .map((state) => state.demSeats)
         .join("-")}`;
 
@@ -790,7 +874,7 @@
       elements.houseWeightValue.textContent = formattedWeight;
       elements.houseWeight.setAttribute(
         "aria-valuetext",
-        `w ${formatWeight(weight, engine)}; ${formatWeightShare(1 - weight, engine)} local district results and ${formatWeightShare(weight, engine)} statewide representation; ${activeSnapshot.demSeats} Democratic and ${activeSnapshot.repSeats} Republican modeled seats`,
+        `w ${formatWeight(weight, engine)}; ${formatWeightShare(1 - weight, engine)} local district results and ${formatWeightShare(weight, engine)} statewide representation; ${activeSnapshot.fullDemSeats} Democratic, ${activeSnapshot.fullRepSeats} Republican, and ${activeSnapshot.fullOtherSeats} Independent House seats; outside-panel assignments remain fixed`,
       );
       renderWeightReading(activeSnapshot);
       renderSwitchReading(activeSnapshot.weight);
@@ -834,28 +918,32 @@
     }
 
     function renderComposition(snapshot) {
-      elements.houseDemSeats.textContent = String(snapshot.demSeats);
-      elements.houseRepSeats.textContent = String(snapshot.repSeats);
+      elements.houseDemSeats.textContent = String(snapshot.fullDemSeats);
+      elements.houseRepSeats.textContent = String(snapshot.fullRepSeats);
+      elements.houseOtherSeats.textContent = String(snapshot.fullOtherSeats);
+      elements.houseOtherSeatSummary.hidden = snapshot.fullOtherSeats === 0;
+      elements.houseOtherLegend.hidden = snapshot.fullOtherSeats === 0;
       elements.housePanelSeatSummary.setAttribute(
         "aria-label",
-        `${snapshot.year} modeled panel at ${formatWeightWithPercent(snapshot.weight, engine)}: ${snapshot.demSeats} Democratic seats and ${snapshot.repSeats} Republican seats`,
+        `${snapshot.year} House at ${formatWeightWithPercent(snapshot.weight, engine)}: ${snapshot.fullDemSeats} Democratic seats, ${snapshot.fullRepSeats} Republican seats, and ${snapshot.fullOtherSeats} Independent seats. ${activeYearModel.uncoveredSeats} outside-panel assignments remain fixed.`,
       );
       elements.houseChamberSeats.setAttribute(
         "aria-label",
-        `${snapshot.demSeats} Democratic and ${snapshot.repSeats} Republican seats among ${snapshot.totalSeats} covered House districts, plus ${activeYearModel.uncoveredSeats} neutral positions outside the panel. Seats are arranged for composition only, not member seating or geography.`,
+        `${snapshot.fullDemSeats} Democratic, ${snapshot.fullRepSeats} Republican, and ${snapshot.fullOtherSeats} Independent seats across all 435 House positions. The ${activeYearModel.totalSeats} covered seats follow the model; ${activeYearModel.uncoveredSeats} outside-panel assignments remain fixed. Seats are arranged for composition only, not member seating or geography.`,
       );
-      const republicanStart = FULL_HOUSE_SEATS - snapshot.repSeats;
+      const otherStart = snapshot.fullDemSeats;
+      const republicanStart = FULL_HOUSE_SEATS - snapshot.fullRepSeats;
       chamberSeats.forEach((seat, index) => {
-        seat.classList.toggle("is-dem", index < snapshot.demSeats);
+        seat.classList.toggle("is-dem", index < otherStart);
         seat.classList.toggle("is-rep", index >= republicanStart);
         seat.classList.toggle(
-          "is-uncovered",
-          index >= snapshot.demSeats && index < republicanStart,
+          "is-other",
+          index >= otherStart && index < republicanStart,
         );
       });
 
       elements.houseDistrictsChanged.textContent = String(snapshot.flips);
-      elements.houseDistrictsChangedNote.textContent = `${snapshot.flips} of ${snapshot.totalSeats} modeled district assignments differ from their local plurality winner.`;
+      elements.houseDistrictsChangedNote.textContent = `${snapshot.flips} of ${snapshot.totalSeats} covered district assignments differ from their local plurality winner; fixed outside seats are excluded.`;
     }
 
     function moveToComposition(direction) {
@@ -884,6 +972,7 @@
 
   const api = {
     FULL_HOUSE_SEATS,
+    OUTSIDE_PANEL_SEATS_BY_YEAR,
     SWITCH_TOLERANCE,
     clampWeight,
     getAvailableYears,
@@ -901,6 +990,7 @@
     formatWeightWithPercent,
     formatWeightShare,
     formatCoverageDetail,
+    formatOutsideAssignments,
   };
 
   globalThis.__HOUSE_EXPLORER__ = api;

@@ -9,7 +9,7 @@ The publication URL is configured as:
 ## What is included
 
 - The complete Model explorer and its 270 bundled state-year election profiles
-- A House explorer that applies one shared `w` to separate state-level optima and aggregates the covered seats
+- A House explorer that applies one shared `w` to separate state-level optima, then completes the 435-seat composition with fixed observed assignments outside the panel
 - Election diagnostics, first-switch weights, custom profiles, advanced specifications, and four interactive figures
 - A downloadable copy of the paper
 - In-page data, diagnostic, and methodology notes
@@ -18,7 +18,9 @@ The publication URL is configured as:
 
 The visitor-facing navigation intentionally contains two pages: **State** (`index.html`) and **House** (`house.html`). The former Paper, Methods, and State Lab pages are not part of this publication package.
 
-The House page reports the supplied election panel, not a reconstructed official 435-seat House. Its chamber draws all 435 positions, colors the covered modeled seats, and leaves seats outside the panel neutral; for 2024, the data cover 22 states and 343 seats. Democratic and Republican vote shares are equal-district two-party averages because the source does not contain raw turnout totals. The House chart aggregates the dataset’s authoritative state-by-state switching schedules across the full `w` range.
+The House page models the supplied election panel and keeps the observed election assignments of outside-panel seats fixed as `w` changes. For 2024, 343 seats are modeled and the remaining 92 stay fixed at 34 Democratic and 58 Republican. The 2000–2004 views also retain the observed Independent seats. Democratic and Republican vote shares are equal-district two-party averages for covered districts because the source does not contain raw turnout totals. The House chart aggregates the dataset’s authoritative state-by-state switching schedules across the full `w` range and reports Democratic share out of all 435 seats.
+
+Outside-panel assignments are audited against the [U.S. House party-division records](https://history.house.gov/Institution/Party-Divisions/Party-Divisions/) and the Clerk’s [official election-statistics archive](https://history.house.gov/Institution/Election-Statistics/). The delayed 2018 NC-09 and 2020 NY-22 outcomes are treated consistently with the bundled panel’s completed-election assignments.
 
 ## Run locally
 

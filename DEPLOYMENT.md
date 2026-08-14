@@ -170,7 +170,7 @@ Verify all of the following:
 6. State and year selectors update the map and diagnostics.
 7. Fine-tune/full-range controls and all four State figures work.
 8. A copied State query-string permalink opens the same state, year, weight, target, and map mode.
-9. The House year selector, weight slider, chart, and previous/next composition controls update the semicircular 435-position chamber, its covered-seat totals, and its Democratic seat-share path.
+9. The House year selector, weight slider, chart, and previous/next composition controls update the semicircular 435-seat chamber, its full-House totals, and its Democratic seat-share path; seats outside the panel keep their observed assignments as `w` changes.
 10. Map and figure PNG downloads work and the paper PDF opens.
 11. There are no missing images, fonts, scripts, or mixed-content errors in the browser console.
 
