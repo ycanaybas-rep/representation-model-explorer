@@ -12,7 +12,6 @@ The publication URL is configured as:
 - A House explorer that applies one shared `w` to separate state-level optima, then completes the 435-seat composition with fixed observed assignments outside the panel
 - Election diagnostics, first-switch weights, custom profiles, advanced specifications, and four interactive figures
 - A downloadable copy of the paper
-- In-page data, diagnostic, and methodology notes
 - Responsive and keyboard-accessible interactions
 - Local-only custom profile storage; no API, analytics service, login, or server-side database
 

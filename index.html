@@ -33,7 +33,7 @@
     <link rel="stylesheet" href="model-workspace.css?v=20260814polish1" />
     <link rel="stylesheet" href="model-editorial-system.css?v=20260805refine1" />
     <link rel="stylesheet" href="final-quality-control.css?v=20260814polish1" />
-    <link rel="stylesheet" href="standalone.css?v=20260814home1" />
+    <link rel="stylesheet" href="standalone.css?v=20260814notes1" />
   </head>
   <body data-page="explorer">
     <a class="skip-link" href="#mainContent">Skip to model</a>
@@ -504,7 +504,7 @@
               <div class="entry-provenance" aria-label="Selected profile source and status">
                 <strong id="entryScenarioLabel">North Carolina · 2018</strong>
                 <span id="entryDataStatus">Author-supplied election data</span>
-                <a id="entrySource" href="#dataNotes">Dataset notes</a>
+                <a id="entrySource" href="references/representation-in-district-based-elections.pdf">Paper and data notes</a>
                 <span id="entryLastUpdated">Updated 2026-08-04</span>
                 <span>Model output · not an official election result</span>
               </div>
@@ -550,7 +550,6 @@
                   <span id="headlineMetricsEyebrow" class="eyebrow" aria-live="polite">Current allocation · diagnostics</span>
                   <h2 id="headlineMetricsTitle">Election diagnostics</h2>
                 </div>
-                <a class="text-link" href="#diagnosticDefinitions">Definitions</a>
               </header>
 
               <div class="diagnostic-target-prompt">
@@ -837,7 +836,6 @@
               component values, and robustness weights behind it.
             </p>
           </div>
-          <a class="text-link" href="#methodSummary">Method summary</a>
         </div>
 
         <div class="objective-band" aria-label="Active objective">
@@ -876,7 +874,6 @@
               <span class="eyebrow">Stability across weights</span>
               <h3 id="representationSummaryTitle">Weight ranges and switch points</h3>
             </div>
-            <a class="text-link" href="#methodSummary">Method notes</a>
           </header>
 
           <dl class="representation-grid">
@@ -1489,59 +1486,6 @@
         </section>
       </section>
 
-      <section id="modelNotes" class="standalone-notes anchor-section" aria-labelledby="modelNotesTitle">
-        <header class="standalone-notes-heading">
-          <div>
-            <span class="eyebrow">About the explorer</span>
-            <h2 id="modelNotesTitle">Data, definitions, and methodology</h2>
-          </div>
-          <a class="text-link" href="references/representation-in-district-based-elections.pdf" download>Download the paper</a>
-        </header>
-
-        <div class="standalone-notes-grid">
-          <article id="dataNotes" class="standalone-note-card">
-            <span class="standalone-note-number">01</span>
-            <h3>Election data</h3>
-            <p>
-              The bundled dataset contains 270 state-year election profiles. Each profile uses
-              author-supplied normalized two-party district vote shares, statewide vote support,
-              observed FPTP seats, the proportional target, switch weights, and flags for proxied
-              races or unusually large third-party vote shares. District shapes are schematic and
-              are not geographic boundaries.
-            </p>
-          </article>
-
-          <article id="diagnosticDefinitions" class="standalone-note-card">
-            <span class="standalone-note-number">02</span>
-            <h3>Diagnostic definitions</h3>
-            <dl class="standalone-definition-list">
-              <div><dt>Efficiency gap</dt><dd>Difference in wasted-vote parity for the displayed allocation.</dd></div>
-              <div><dt>Partisan bias</dt><dd>Seat advantage at equal statewide support under the selected rule.</dd></div>
-              <div><dt>Seat–vote gap</dt><dd>Displayed Democratic seat share minus equal-district Democratic vote share.</dd></div>
-              <div><dt>Declination</dt><dd>Asymmetry in the distribution of district wins and losses.</dd></div>
-              <div><dt>Mean–median gap</dt><dd>Statewide Democratic support minus the median district share.</dd></div>
-              <div><dt>First switch</dt><dd>First statewide weight at which the optimum departs from FPTP.</dd></div>
-            </dl>
-          </article>
-
-          <article id="methodSummary" class="standalone-note-card">
-            <span class="standalone-note-number">03</span>
-            <h3>Model summary</h3>
-            <p>
-              The model balances district outcomes with statewide representation. At <i>w</i> = 0,
-              district results determine the delegation; as <i>w</i> rises, the statewide target
-              matters more. See <a class="text-link" href="references/representation-in-district-based-elections.pdf" target="_blank" rel="noopener">the paper</a>
-              for the full model and assumptions.
-            </p>
-          </article>
-        </div>
-
-        <p class="standalone-research-note">
-          This is a research and methodological explorer, not an official election result or a
-          legal determination. Custom profiles remain in the visitor’s browser and are not sent to
-          a server.
-        </p>
-      </section>
     </main>
 
     <dialog
@@ -1637,16 +1581,13 @@
             <strong>Districts to Delegations</strong>
           </div>
         </div>
-        <p>
-          Historical election profiles and user-entered district profiles for methodological exploration.
-          <a href="#modelNotes">Data and methods</a>
-        </p>
+        <p>Historical election profiles and user-entered district profiles for methodological exploration.</p>
       </div>
     </footer>
 
     <script src="vendor/katex/katex.min.js" defer></script>
     <script src="site.js?v=20260814polish1" defer></script>
     <script src="election-data.js?v=20260804dataset1" defer></script>
-    <script src="script.js?v=20260814polish1" defer></script>
+    <script src="script.js?v=20260814notes1" defer></script>
   </body>
 </html>

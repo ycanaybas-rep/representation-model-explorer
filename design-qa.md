@@ -44,6 +44,51 @@ final result: passed
 
 ---
 
+# State supporting-notes removal design QA
+
+## Source truth
+
+- Section selected for deletion: `/var/folders/v9/fdxck81j7x7grf7fdqrs83h80000gp/T/codex-clipboard-1c044fb3-4cdf-4af6-80a9-9eb0c35bd78c.png`
+- Desktop implementation capture: `/Users/aybas/.codex/visualizations/2026/08/14/01a000dc-2a39-78c3-8df9-8f74a1fce54f/state-bottom-without-notes.png`
+- Compact implementation capture: `/Users/aybas/.codex/visualizations/2026/08/14/01a000dc-2a39-78c3-8df9-8f74a1fce54f/state-bottom-without-notes-390x844.png`
+- Combined before-and-after comparison: `/Users/aybas/.codex/visualizations/2026/08/14/01a000dc-2a39-78c3-8df9-8f74a1fce54f/state-notes-removal-comparison.png`
+
+## Capture conditions
+
+- Page: `index.html?verify=remove-notes`
+- Desktop viewport and screenshot: 1440 × 900 CSS pixels and 1440 × 900 pixels at 1× density
+- Compact viewport and screenshot: 390 × 844 CSS pixels and 390 × 844 pixels at 1× density
+- Source screenshot: 2048 × 1001 pixels; normalized to 1400 × 684 pixels in the comparison
+- Desktop implementation: normalized to 1400 × 875 pixels in the comparison
+- State: default North Carolina 2018 election, scrolled to the end of Figure 04
+
+## Findings
+
+- No P0, P1, or P2 differences remain. The selected “Data, definitions, and methodology” section is absent, Figure 04 flows directly into the footer, and no empty card shell or excessive section-sized gap remains.
+- Typography: all remaining figure and footer type preserves the established serif/sans hierarchy; no orphaned heading survives the deletion.
+- Spacing and layout rhythm: the desktop and compact captures retain a deliberate closing gap between Figure 04 and the footer without the former full-page notes block.
+- Colors and visual tokens: the paper background, gold divider, and ink footer remain unchanged.
+- Image quality and asset fidelity: existing figure rendering and brand marks remain sharp and unchanged; the deleted section contained no required image asset.
+- Copy and content: the deleted heading, three note cards, research disclaimer, footer “Data and methods” link, and visible “Definitions” link are gone. The paper remains available from the existing page actions.
+
+## Responsive and interaction checks
+
+- 1440 × 900: no horizontal overflow; Figure 04 and the footer form a clean page ending.
+- 390 × 844: no horizontal page overflow; the existing chart remains horizontally scrollable and the footer follows without a blank panel.
+- All remaining hash links resolve to an existing element.
+- Browser console contained no warnings or errors.
+
+## Comparison history
+
+1. Removed the complete supporting-notes section and its obsolete CSS.
+2. Removed the visible and hidden links that pointed to the deleted definition and method anchors.
+3. Repointed retained source metadata to the bundled paper so exported source URLs do not use a deleted fragment.
+4. Compared the desktop and compact page endings against the selected deletion target; no further visual fix was required.
+
+final result: passed
+
+---
+
 # House chart chapter design QA
 
 ## Source truth

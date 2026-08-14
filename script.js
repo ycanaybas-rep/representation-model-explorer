@@ -3175,7 +3175,7 @@ function getScenarioMetadata(stateName, year) {
     dataVersion: `${bundledElectionData.dataVersion}-${stateKey}-${year}`,
     dataStatus: "Author-supplied election data",
     sourceLabel: ELECTION_DATA_SOURCE,
-    sourceHref: "#dataNotes",
+    sourceHref: "references/representation-in-district-based-elections.pdf",
     lastUpdated: bundledElectionData.lastUpdated,
     proxyCount: quality.proxy,
     largeThirdPartyCount: quality.largeThirdParty,
@@ -3197,7 +3197,7 @@ function getCustomScenarioMetadata(definition) {
     dataVersion: getCustomDataVersion(definition),
     dataStatus: "User-entered data",
     sourceLabel: "Normalized user-entered two-party district profile embedded in this scenario",
-    sourceHref: "#dataNotes",
+    sourceHref: "references/representation-in-district-based-elections.pdf",
     lastUpdated,
   };
 }
