@@ -9,3 +9,18 @@ coverage/
 .env
 .env.*
 !.env.example
+
+# Local review artifacts
+design-qa.md
+
+# Credentials and private keys
+.envrc
+.npmrc
+.pypirc
+.netrc
+credentials*
+secrets*
+*.pem
+*.key
+*.p12
+*.pfx
