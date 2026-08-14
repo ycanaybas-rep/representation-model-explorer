@@ -184,6 +184,31 @@
     }, []);
   }
 
+  function countDirectionalSwitches(districts, assignment) {
+    if (!Array.isArray(districts) || !Array.isArray(assignment)) {
+      throw new Error("Districts and assignments are required to count switches.");
+    }
+    if (districts.length !== assignment.length) {
+      throw new Error("District and assignment counts must match.");
+    }
+
+    return assignment.reduce(
+      (counts, assignedParty, index) => {
+        const localWinner = districts[index]?.winner;
+        if (localWinner !== "D" && localWinner !== "R") {
+          throw new Error(`District ${index + 1} has no valid local plurality winner.`);
+        }
+        if (Number(assignedParty) === 1 && localWinner === "R") {
+          counts.democratic += 1;
+        } else if (Number(assignedParty) === 0 && localWinner === "D") {
+          counts.republican += 1;
+        }
+        return counts;
+      },
+      { democratic: 0, republican: 0 },
+    );
+  }
+
   function computeHouseSnapshot(yearModel, weight) {
     const w = clampWeight(weight);
     const stateResults = yearModel.states.map((state) => {
@@ -201,6 +226,10 @@
         calculatedBest,
       );
       const demSeatChange = best.demSeats - state.metrics.demSeats;
+      const directionalSwitches = countDirectionalSwitches(
+        state.districts,
+        best.assignment,
+      );
       return {
         name: state.name,
         code: state.code,
@@ -215,6 +244,8 @@
         repSeats: best.repSeats,
         demSeatChange,
         flips: best.flips,
+        democraticSwitches: directionalSwitches.democratic,
+        republicanSwitches: directionalSwitches.republican,
         districtLoss: best.districtLoss,
         statewideLoss: best.statewideLoss,
         totalLoss: best.totalLoss,
@@ -230,6 +261,14 @@
     const fullRepSeats = coveredRepSeats + yearModel.outsideRepSeats;
     const fullOtherSeats = yearModel.outsideOtherSeats;
     const flips = stateResults.reduce((total, state) => total + state.flips, 0);
+    const democraticSwitches = stateResults.reduce(
+      (total, state) => total + state.democraticSwitches,
+      0,
+    );
+    const republicanSwitches = stateResults.reduce(
+      (total, state) => total + state.republicanSwitches,
+      0,
+    );
     const coveredSeatShare = coveredDemSeats / yearModel.totalSeats;
     const seatSupportGap = coveredSeatShare - yearModel.demSupport;
     const efficiencyGap = coveredSeatShare - 2 * yearModel.demSupport + 0.5;
@@ -259,6 +298,8 @@
       efficiencyGap,
       gallagherIndex: Math.abs(seatSupportGap),
       flips,
+      democraticSwitches,
+      republicanSwitches,
       pluralityRetained: yearModel.totalSeats - flips,
       changedStates: stateResults.filter((state) => state.demSeatChange !== 0).length,
       majorityInversion,
@@ -532,7 +573,10 @@
       "houseRepVoteShare",
       "houseFptpSeats",
       "houseProportionalSeats",
+      "houseChangedSummary",
       "houseDistrictsChanged",
+      "houseDemocraticSwitches",
+      "houseRepublicanSwitches",
       "houseDistrictsChangedNote",
       "houseSeatShareChart",
       "houseTrajectoryDescription",
@@ -968,6 +1012,16 @@
       });
 
       elements.houseDistrictsChanged.textContent = String(snapshot.flips);
+      elements.houseDemocraticSwitches.textContent = String(
+        snapshot.democraticSwitches,
+      );
+      elements.houseRepublicanSwitches.textContent = String(
+        snapshot.republicanSwitches,
+      );
+      elements.houseChangedSummary.setAttribute(
+        "aria-label",
+        `${snapshot.flips} changed ${snapshot.flips === 1 ? "district" : "districts"}: ${snapshot.democraticSwitches} switched to a Democratic assignment and ${snapshot.republicanSwitches} switched to a Republican assignment.`,
+      );
       elements.houseDistrictsChangedNote.textContent = `${snapshot.flips} of ${snapshot.totalSeats} covered district assignments differ from their local plurality winner; fixed outside seats are excluded.`;
     }
 
@@ -1003,6 +1057,7 @@
     getAvailableYears,
     buildYearModel,
     buildSwitchGroups,
+    countDirectionalSwitches,
     computeHouseSnapshot,
     computeMajorityInversion,
     distributeSeats,

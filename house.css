@@ -853,6 +853,63 @@ body[data-page="house"].hero-annotations-ready.hero-annotations-revealed
   line-height: 1;
 }
 
+.house-changed-summary {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 18px;
+  margin: 8px 0 7px;
+}
+
+.house-changed-summary > strong {
+  min-width: 0.8em;
+  color: var(--ink, #17231f);
+  font-family: var(--font-display);
+  font-size: clamp(2.25rem, 3vw, 3rem);
+  font-variant-numeric: tabular-nums;
+  line-height: 0.95;
+}
+
+.house-switch-breakdown {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  margin: 0;
+  padding: 1px 0 1px 18px;
+  border-left: 1px solid var(--line, #d8d5cc);
+}
+
+.house-switch-breakdown > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.house-switch-breakdown dt {
+  font-size: 0.68rem;
+  font-weight: 780;
+  letter-spacing: 0.005em;
+  line-height: 1.2;
+}
+
+.house-switch-breakdown dd {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.08rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.house-switch-breakdown .is-dem :is(dt, dd) {
+  color: var(--house-dem-deep);
+}
+
+.house-switch-breakdown .is-rep :is(dt, dd) {
+  color: var(--house-rep-deep);
+}
+
 .house-summary-card p {
   margin: 0;
   color: var(--muted, #646b68);

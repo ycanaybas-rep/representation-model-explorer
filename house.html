@@ -28,7 +28,7 @@
     <link rel="apple-touch-icon" href="apple-touch-icon-two-party-v2.png?v=20260728brand2" />
     <link rel="stylesheet" href="styles.css?v=20260814authors1" />
     <link rel="stylesheet" href="scholarly-ui.css?v=20260728surface1" />
-    <link rel="stylesheet" href="house.css?v=20260814figures1" />
+    <link rel="stylesheet" href="house.css?v=20260814switches1" />
     <link rel="stylesheet" href="final-quality-control.css?v=20260814polish1" />
     <link rel="stylesheet" href="standalone.css?v=20260814notes1" />
   </head>
@@ -271,7 +271,24 @@
 
           <article class="house-summary-card">
             <span>Changed districts</span>
-            <strong id="houseDistrictsChanged">—</strong>
+            <div
+              id="houseChangedSummary"
+              class="house-changed-summary"
+              role="group"
+              aria-label="Changed district breakdown"
+            >
+              <strong id="houseDistrictsChanged" aria-label="Total changed districts">—</strong>
+              <dl class="house-switch-breakdown">
+                <div class="is-dem">
+                  <dt>To Democratic</dt>
+                  <dd id="houseDemocraticSwitches">—</dd>
+                </div>
+                <div class="is-rep">
+                  <dt>To Republican</dt>
+                  <dd id="houseRepublicanSwitches">—</dd>
+                </div>
+              </dl>
+            </div>
             <p id="houseDistrictsChangedNote">Compared with district-plurality winners.</p>
           </article>
         </aside>
@@ -341,6 +358,6 @@
     <script src="site.js?v=20260814hero1" defer></script>
     <script src="election-data.js?v=20260804dataset1" defer></script>
     <script src="script.js?v=20260814notes1" defer></script>
-    <script src="house.js?v=20260814copy1" defer></script>
+    <script src="house.js?v=20260814switches1" defer></script>
   </body>
 </html>

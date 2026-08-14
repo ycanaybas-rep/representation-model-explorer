@@ -44,6 +44,44 @@ final result: passed
 
 ---
 
+# House directional-switch summary design QA
+
+## Source truth
+
+- User-selected Changed districts card: `/var/folders/v9/fdxck81j7x7grf7fdqrs83h80000gp/T/codex-clipboard-86cb7610-b48d-4c7b-9f10-42189ce0a1be.png`
+- Desktop implementation crop: `/Users/aybas/.codex/visualizations/2026/08/14/01a000dc-2a39-78c3-8df9-8f74a1fce54f/house-switch-card-desktop.jpg`
+- Compact implementation crop: `/Users/aybas/.codex/visualizations/2026/08/14/01a000dc-2a39-78c3-8df9-8f74a1fce54f/house-switch-card-mobile.jpg`
+- Combined source and implementation comparison: `/Users/aybas/.codex/visualizations/2026/08/14/01a000dc-2a39-78c3-8df9-8f74a1fce54f/house-switch-card-source-vs-implementation.jpg`
+
+## Capture conditions
+
+- Page state: House Explorer, 2018, `w = 0.003250`.
+- Desktop viewport: 1440 × 900 CSS pixels.
+- Compact viewport: 390 × 844 CSS pixels.
+- The source and compact implementation were normalized to the same 372-pixel card width for direct comparison.
+
+## Findings
+
+- The established paper card, teal top rule, uppercase heading, serif total, muted note, corner radius, and shadow remain unchanged.
+- The total remains the dominant value. A quiet divider separates it from two compact destination-party rows immediately to its right.
+- “To Democratic” and its count use the existing deep Democratic blue; “To Republican” and its count use the existing deep Republican red.
+- The added breakdown fits without clipping or crowding at desktop and compact widths. The modest increase in card height is proportional to the new information.
+- The visible labels avoid the ambiguous phrase “Democratic switches”: they state the destination party directly.
+
+## Responsive, functional, and accessibility checks
+
+- 1440 × 900 and 390 × 844: the card stays inside its grid column and the page has no horizontal overflow.
+- 2018 at `w = 0.003250`: `2 total · 2 to Democratic · 0 to Republican`.
+- 2010 at `w = 0.003250`: `2 total · 1 to Democratic · 1 to Republican`, confirming opposite directions are counted separately rather than netted.
+- 2024 at `w = 0.003250`: `2 total · 0 to Democratic · 2 to Republican`.
+- At `w = 0`, all three values are zero.
+- The group has a dynamic accessible label that reports the total and both party directions in full.
+- Browser console contained no warnings or errors.
+
+final result: passed
+
+---
+
 # Footer author-links design QA
 
 ## Source truth
