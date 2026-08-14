@@ -10,6 +10,7 @@ const check = (condition, message) => {
 };
 
 const pageFiles = ["index.html", "house.html"];
+const expectedNavigation = ["./", "house.html"];
 const pages = Object.fromEntries(pageFiles.map((file) => [file, read(file)]));
 const html = pages["index.html"];
 const houseHtml = pages["house.html"];
@@ -48,13 +49,42 @@ for (const [pageFile, pageHtml] of Object.entries(pages)) {
   const nav = pageHtml.match(/<nav class="primary-nav"[\s\S]*?<\/nav>/)?.[0] || "";
   const links = Array.from(nav.matchAll(/href="([^"]+)"/g), (match) => match[1]);
   const labels = Array.from(nav.matchAll(/>(State|House)<\/a>/g), (match) => match[1]);
-  check(JSON.stringify(links) === JSON.stringify(pageFiles), `${pageFile}: State/House navigation is incomplete`);
+  check(JSON.stringify(links) === JSON.stringify(expectedNavigation), `${pageFile}: State/House navigation is incomplete`);
   check(JSON.stringify(labels) === JSON.stringify(["State", "House"]), `${pageFile}: navigation labels are incorrect`);
   check((nav.match(/aria-current="page"/g) || []).length === 1, `${pageFile}: navigation needs one current page`);
 }
 
 check(!/(?:paper|methodology|state-lab)\.html/.test(script), "State script links to a removed page");
 check(!/(?:paper|methodology|state-lab)\.html/.test(houseScript), "House script links to a removed page");
+const cleanScenario = engine.parseScenarioUrl("https://representation.yunusaybas.com/");
+check(!cleanScenario.found && cleanScenario.warning === "", "clean State URL loads defaults without a restore warning");
+const initializeAppStart = script.indexOf("function initializeApp()");
+const cleanLandingAssignment = script.slice(
+  script.indexOf("preserveCleanLandingUrl =", initializeAppStart),
+  script.indexOf("scenarioRestoreNotice =", initializeAppStart),
+);
+check(
+  cleanLandingAssignment.includes("!window.location.search"),
+  "State explorer recognizes a query-free landing URL",
+);
+const scenarioSyncBlock = script.slice(
+  script.indexOf("function syncScenarioUrl()"),
+  script.indexOf("function getDisplayedResultLabel", script.indexOf("function syncScenarioUrl()")),
+);
+check(
+  scenarioSyncBlock.includes("preserveCleanLandingUrl") && scenarioSyncBlock.includes("return;"),
+  "State explorer preserves the clean root URL instead of replacing it with a default permalink",
+);
+check(
+  houseScript.includes("const preserveCleanPageUrl = !window.location.search") &&
+    /if \(preserveCleanPageUrl \|\| !window\.history\?\.replaceState\) return;/.test(houseScript),
+  "House explorer preserves a clean house.html URL while retaining explicit permalink queries",
+);
+check(
+  !/<meta[^>]+http-equiv=["']refresh["']/i.test(html) &&
+    !/window\.location\.(?:assign|replace)\s*\(/.test(script),
+  "State landing page contains no client-side redirect",
+);
 check(
   /id="dataNotes"/.test(html) && /id="diagnosticDefinitions"/.test(html) && /id="methodSummary"/.test(html),
   "in-page supporting notes are incomplete",
