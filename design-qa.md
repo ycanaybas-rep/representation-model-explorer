@@ -38,5 +38,6 @@
 1. Replaced the dark split-panel hero with the State page’s open editorial composition.
 2. Removed the duplicated hero coverage summary while preserving the detailed panel-coverage meter lower on the page.
 3. Tuned title sizes and mobile spacing after desktop, tablet, and compact-phone comparison.
+4. Replaced the slogan-like draft with the descriptive title “See how state delegations shape the House” and a direct model question.
 
 final result: passed
