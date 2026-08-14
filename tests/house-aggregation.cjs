@@ -45,10 +45,33 @@ deepEqual(
   "House year selector uses all available even-year elections",
 );
 
+const expectedOutsideAssignments = {
+  2000: { demSeats: 42, repSeats: 71, otherSeats: 2 },
+  2002: { demSeats: 53, repSeats: 75, otherSeats: 1 },
+  2004: { demSeats: 37, repSeats: 59, otherSeats: 1 },
+  2006: { demSeats: 47, repSeats: 50, otherSeats: 0 },
+  2008: { demSeats: 53, repSeats: 44, otherSeats: 0 },
+  2010: { demSeats: 36, repSeats: 61, otherSeats: 0 },
+  2012: { demSeats: 73, repSeats: 78, otherSeats: 0 },
+  2014: { demSeats: 30, repSeats: 68, otherSeats: 0 },
+  2016: { demSeats: 32, repSeats: 66, otherSeats: 0 },
+  2018: { demSeats: 41, repSeats: 57, otherSeats: 0 },
+  2020: { demSeats: 35, repSeats: 63, otherSeats: 0 },
+  2022: { demSeats: 47, repSeats: 71, otherSeats: 0 },
+  2024: { demSeats: 34, repSeats: 58, otherSeats: 0 },
+};
+deepEqual(
+  house.OUTSIDE_PANEL_SEATS_BY_YEAR,
+  expectedOutsideAssignments,
+  "fixed outside-panel election assignments cover every available year",
+);
+
 const model2024 = house.buildYearModel(engine, 2024);
 equal(model2024.stateCount, 22, "2024 House panel has 22 covered states");
 equal(model2024.totalSeats, 343, "2024 House panel has 343 covered seats");
 equal(model2024.uncoveredSeats, 92, "2024 House panel visibly leaves 92 seats uncovered");
+equal(model2024.outsideDemSeats, 34, "2024 fixes 34 outside-panel Democratic seats");
+equal(model2024.outsideRepSeats, 58, "2024 fixes 58 outside-panel Republican seats");
 equal(model2024.switchGroups.length, 53, "2024 House panel has 53 recorded switching points");
 equal(model2024.proxyCount, 28, "2024 coverage reports the source proxy count");
 check(
@@ -77,14 +100,14 @@ equal(
 );
 
 const expected2024Path = new Map([
-  [0, [181, 162]],
-  [0.25, [175, 168]],
-  [0.5, [178, 165]],
-  [0.75, [179, 164]],
-  [1, [180, 163]],
+  [0, [181, 162, 215, 220]],
+  [0.25, [175, 168, 209, 226]],
+  [0.5, [178, 165, 212, 223]],
+  [0.75, [179, 164, 213, 222]],
+  [1, [180, 163, 214, 221]],
 ]);
 
-for (const [weight, [expectedDem, expectedRep]] of expected2024Path) {
+for (const [weight, [expectedDem, expectedRep, expectedFullDem, expectedFullRep]] of expected2024Path) {
   const snapshot = house.computeHouseSnapshot(model2024, weight);
   equal(snapshot.demSeats, expectedDem, `2024 at w=${weight}: Democratic panel seats`);
   equal(snapshot.repSeats, expectedRep, `2024 at w=${weight}: Republican panel seats`);
@@ -92,6 +115,14 @@ for (const [weight, [expectedDem, expectedRep]] of expected2024Path) {
     snapshot.demSeats + snapshot.repSeats,
     model2024.totalSeats,
     `2024 at w=${weight}: modeled seats sum to panel coverage`,
+  );
+  equal(snapshot.fullDemSeats, expectedFullDem, `2024 at w=${weight}: full Democratic seats`);
+  equal(snapshot.fullRepSeats, expectedFullRep, `2024 at w=${weight}: full Republican seats`);
+  equal(snapshot.fullOtherSeats, 0, `2024 at w=${weight}: no Independent seats`);
+  equal(
+    snapshot.fullDemSeats + snapshot.fullRepSeats + snapshot.fullOtherSeats,
+    house.FULL_HOUSE_SEATS,
+    `2024 at w=${weight}: full composition sums to 435`,
   );
   approx(
     snapshot.demSupport,
@@ -109,6 +140,8 @@ const atZero = house.computeHouseSnapshot(model2024, 0);
 equal(atZero.demSeats, model2024.fptpDemSeats, "w=0 aggregates state FPTP Democratic seats");
 equal(atZero.repSeats, model2024.fptpRepSeats, "w=0 aggregates state FPTP Republican seats");
 equal(atZero.flips, 0, "w=0 retains every local plurality winner");
+equal(atZero.fullDemSeats, model2024.fullFptpDemSeats, "w=0 begins at the full Democratic result");
+equal(atZero.fullRepSeats, model2024.fullFptpRepSeats, "w=0 begins at the full Republican result");
 
 const atOne = house.computeHouseSnapshot(model2024, 1);
 equal(
@@ -121,12 +154,48 @@ equal(
   model2024.proportionalRepSeats,
   "w=1 aggregates the state-by-state proportional Republican targets",
 );
+equal(
+  atOne.fullDemSeats,
+  model2024.fullProportionalDemSeats,
+  "w=1 combines the covered Democratic targets with fixed outside seats",
+);
+equal(
+  atOne.fullRepSeats,
+  model2024.fullProportionalRepSeats,
+  "w=1 combines the covered Republican targets with fixed outside seats",
+);
 
 const yearModels = new Map([[2024, model2024]]);
 const getYearModel = (year) => {
   if (!yearModels.has(year)) yearModels.set(year, house.buildYearModel(engine, year));
   return yearModels.get(year);
 };
+
+for (const [year, expected] of [
+  [2000, [212, 221, 2]],
+  [2002, [205, 229, 1]],
+  [2004, [202, 232, 1]],
+  [2018, [235, 200, 0]],
+  [2020, [222, 213, 0]],
+]) {
+  const opening = house.computeHouseSnapshot(getYearModel(year), 0);
+  deepEqual(
+    [opening.fullDemSeats, opening.fullRepSeats, opening.fullOtherSeats],
+    expected,
+    `${year}: opening full-House assignment matches the completed election result`,
+  );
+}
+
+equal(
+  house.formatOutsideAssignments(model2024),
+  "92 seats are outside this year’s panel (34 Democratic, 58 Republican). Their assignments do not change with w.",
+  "outside-panel copy reports the actual fixed 2024 assignments cleanly",
+);
+equal(
+  house.formatComposition(212, 221, 2),
+  "212 D / 221 R / 2 Independent",
+  "composition copy includes Independent seats when present",
+);
 
 for (const year of availableYears) {
   const yearModel = getYearModel(year);
@@ -136,8 +205,24 @@ for (const year of availableYears) {
   );
   const opening = house.computeHouseSnapshot(yearModel, 0);
   const endpoint = house.computeHouseSnapshot(yearModel, 1);
+  const expectedOutside = expectedOutsideAssignments[year];
 
-  equal(series.totalSeats, yearModel.totalSeats, `${year}: curve reports panel coverage`);
+  equal(series.totalSeats, house.FULL_HOUSE_SEATS, `${year}: curve uses all 435 House seats`);
+  equal(series.coveredSeats, yearModel.totalSeats, `${year}: curve retains panel coverage metadata`);
+  equal(
+    yearModel.outsideDemSeats + yearModel.outsideRepSeats + yearModel.outsideOtherSeats,
+    yearModel.uncoveredSeats,
+    `${year}: fixed outside assignments fill every uncovered seat`,
+  );
+  deepEqual(
+    {
+      demSeats: yearModel.outsideDemSeats,
+      repSeats: yearModel.outsideRepSeats,
+      otherSeats: yearModel.outsideOtherSeats,
+    },
+    expectedOutside,
+    `${year}: fixed outside assignments match the audited election results`,
+  );
   equal(series.events.length, eventGroups.length, `${year}: curve includes every interior switch`);
   equal(
     series.regimes.length,
@@ -149,17 +234,17 @@ for (const year of availableYears) {
   approx(series.regimes[0].start, 0, `${year}: first curve regime begins at zero`);
   approx(series.regimes.at(-1).end, 1, `${year}: final curve regime ends at one`);
   approx(series.vertices[0].weight, 0, `${year}: first chart vertex is at zero`);
-  approx(series.vertices[0].demSeatShare, opening.demSeatShare, `${year}: first chart vertex is FPTP`);
+  approx(series.vertices[0].demSeatShare, opening.fullDemSeatShare, `${year}: first chart vertex is the full FPTP result`);
   approx(series.vertices.at(-1).weight, 1, `${year}: final chart vertex is at one`);
   approx(
     series.vertices.at(-1).demSeatShare,
-    endpoint.demSeatShare,
+    endpoint.fullDemSeatShare,
     `${year}: final chart vertex is the proportional endpoint`,
   );
-  equal(series.endpoint.demSeats, endpoint.demSeats, `${year}: curve endpoint seat count is direct`);
+  equal(series.endpoint.demSeats, endpoint.fullDemSeats, `${year}: curve endpoint full seat count is direct`);
   approx(
     series.endpoint.demSeatShare,
-    endpoint.demSeatShare,
+    endpoint.fullDemSeatShare,
     `${year}: curve endpoint share is direct`,
   );
 
@@ -179,13 +264,13 @@ for (const year of availableYears) {
     const direct = house.computeHouseSnapshot(yearModel, regime.sampleWeight);
     equal(
       regime.demSeats,
-      direct.demSeats,
-      `${year} regime ${index + 1}: stored Democratic seats match direct optimization`,
+      direct.fullDemSeats,
+      `${year} regime ${index + 1}: stored full Democratic seats match direct optimization`,
     );
     approx(
       regime.demSeatShare,
-      direct.demSeatShare,
-      `${year} regime ${index + 1}: stored Democratic share matches direct optimization`,
+      direct.fullDemSeatShare,
+      `${year} regime ${index + 1}: stored full Democratic share matches direct optimization`,
     );
   });
 
@@ -212,19 +297,19 @@ for (const year of availableYears) {
     );
     equal(
       event.exactDemSeats,
-      exact.demSeats,
+      exact.fullDemSeats,
       `${year} switch ${index + 1}: event point uses exact tie-breaking result`,
     );
     approx(leftVertex.weight, event.weight, `${year} switch ${index + 1}: left vertex x`);
     approx(rightVertex.weight, event.weight, `${year} switch ${index + 1}: right vertex x`);
     approx(
       leftVertex.demSeatShare,
-      event.beforeDemSeats / yearModel.totalSeats,
+      event.beforeDemSeats / house.FULL_HOUSE_SEATS,
       `${year} switch ${index + 1}: left vertex y`,
     );
     approx(
       rightVertex.demSeatShare,
-      event.afterDemSeats / yearModel.totalSeats,
+      event.afterDemSeats / house.FULL_HOUSE_SEATS,
       `${year} switch ${index + 1}: right vertex y`,
     );
   });
@@ -239,18 +324,18 @@ for (const year of availableYears) {
   const allDemSeatCounts = [
     ...series.regimes.map((regime) => regime.demSeats),
     ...series.events.map((event) => event.exactDemSeats),
-    endpoint.demSeats,
+    endpoint.fullDemSeats,
   ];
   equal(series.minDemSeats, Math.min(...allDemSeatCounts), `${year}: minimum chart seat count is exact`);
   equal(series.maxDemSeats, Math.max(...allDemSeatCounts), `${year}: maximum chart seat count is exact`);
   approx(
     series.minDemSeatShare,
-    series.minDemSeats / yearModel.totalSeats,
+    series.minDemSeats / house.FULL_HOUSE_SEATS,
     `${year}: minimum chart share corresponds to an integer seat count`,
   );
   approx(
     series.maxDemSeatShare,
-    series.maxDemSeats / yearModel.totalSeats,
+    series.maxDemSeats / house.FULL_HOUSE_SEATS,
     `${year}: maximum chart share corresponds to an integer seat count`,
   );
 
@@ -262,13 +347,13 @@ for (const year of availableYears) {
     `${year}: focused chart domain contains every curve value`,
   );
 
-  const rowCounts = house.distributeSeats(yearModel.totalSeats);
-  const chamberLayout = house.buildChamberSeatLayout(yearModel.totalSeats);
-  equal(chamberLayout.length, yearModel.totalSeats, `${year}: chamber draws every covered seat`);
+  const rowCounts = house.distributeSeats(house.FULL_HOUSE_SEATS);
+  const chamberLayout = house.buildChamberSeatLayout(house.FULL_HOUSE_SEATS);
+  equal(chamberLayout.length, house.FULL_HOUSE_SEATS, `${year}: chamber draws all 435 seats`);
   equal(
     rowCounts.reduce((sum, count) => sum + count, 0),
-    yearModel.totalSeats,
-    `${year}: chamber arc counts sum to panel coverage`,
+    house.FULL_HOUSE_SEATS,
+    `${year}: chamber arc counts sum to the full House`,
   );
   const coordinateKeys = new Set();
   chamberLayout.forEach((seat, index) => {
@@ -323,6 +408,31 @@ for (const year of availableYears) {
       snapshot.flips + snapshot.pluralityRetained,
       yearModel.totalSeats,
       `${year} at w=${weight}: changed and retained districts partition the panel`,
+    );
+    equal(
+      snapshot.fullDemSeats,
+      snapshot.demSeats + yearModel.outsideDemSeats,
+      `${year} at w=${weight}: full Democratic total adds the fixed outside seats`,
+    );
+    equal(
+      snapshot.fullRepSeats,
+      snapshot.repSeats + yearModel.outsideRepSeats,
+      `${year} at w=${weight}: full Republican total adds the fixed outside seats`,
+    );
+    equal(
+      snapshot.fullOtherSeats,
+      yearModel.outsideOtherSeats,
+      `${year} at w=${weight}: Independent seats remain fixed`,
+    );
+    equal(
+      snapshot.fullDemSeats + snapshot.fullRepSeats + snapshot.fullOtherSeats,
+      house.FULL_HOUSE_SEATS,
+      `${year} at w=${weight}: full party assignments partition all 435 seats`,
+    );
+    approx(
+      snapshot.fullDemSeatShare,
+      snapshot.fullDemSeats / house.FULL_HOUSE_SEATS,
+      `${year} at w=${weight}: full Democratic share uses the 435-seat denominator`,
     );
     for (const stateResult of snapshot.stateResults) {
       const state = yearModel.states.find((candidate) => candidate.name === stateResult.name);
@@ -461,6 +571,9 @@ const requiredHouseIds = [
   "houseTrajectoryDescription",
   "houseTrajectoryReading",
   "houseChartScale",
+  "houseOtherSeatSummary",
+  "houseOtherSeats",
+  "houseOtherLegend",
 ];
 requiredHouseIds.forEach((id) => {
   equal(
@@ -480,6 +593,9 @@ equal(
   "Popular-vote proxy",
   "Where the House total comes from",
   "What this page does—and does not—measure",
+  "remain unassigned",
+  "neutral positions",
+  "Democratic share of covered House seats",
 ].forEach((removedText) => {
   check(!normalizedHouseHtml.includes(removedText), `House page removes “${removedText}”`);
 });
@@ -507,9 +623,15 @@ check(
   /id="houseSeatShareChart"[\s\S]*?aria-labelledby="houseTrajectorySvgTitle"[\s\S]*?aria-describedby="houseTrajectoryDescription"/.test(houseHtml),
   "House chart exposes its changing description without an overridden aria-label",
 );
+const houseJs = fs.readFileSync(path.join(projectRoot, "house.js"), "utf8");
 check(
-  /buildChamberSeatLayout\(FULL_HOUSE_SEATS\)/.test(fs.readFileSync(path.join(projectRoot, "house.js"), "utf8")),
-  "House chamber draws all 435 positions and leaves uncovered seats neutral",
+  /buildChamberSeatLayout\(FULL_HOUSE_SEATS\)/.test(houseJs) &&
+    /seat\.classList\.toggle\(\s*"is-other"/.test(houseJs),
+  "House chamber draws all 435 assignments and supports Independent seats",
+);
+check(
+  /218-seat majority/.test(houseJs) && /Democratic share of all 435/.test(houseJs),
+  "House trajectory uses the full-House denominator and correct majority threshold",
 );
 check(
   /\.house-chamber\s*\{[\s\S]*?position:\s*relative/.test(houseCss) &&
