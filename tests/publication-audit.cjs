@@ -109,8 +109,13 @@ check(
   "State landing page contains no client-side redirect",
 );
 check(
-  /id="dataNotes"/.test(html) && /id="diagnosticDefinitions"/.test(html) && /id="methodSummary"/.test(html),
-  "in-page supporting notes are incomplete",
+  !/id="(?:modelNotes|dataNotes|diagnosticDefinitions|methodSummary)"/.test(html) &&
+    !/#(?:modelNotes|dataNotes|diagnosticDefinitions|methodSummary)/.test(`${html}\n${script}`),
+  "removed data-and-methodology panel or one of its stale anchors is still present",
+);
+check(
+  !/\.standalone-(?:notes|note-card|definition-list|research-note)/.test(standaloneStyles),
+  "removed data-and-methodology panel still has visitor-facing CSS",
 );
 check(html.indexOf("election-data.js") < html.indexOf("script.js"), "State page must load data before the model script");
 check(
