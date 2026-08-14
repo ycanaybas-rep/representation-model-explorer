@@ -28,7 +28,7 @@
     <link rel="apple-touch-icon" href="apple-touch-icon-two-party-v2.png?v=20260728brand2" />
     <link rel="stylesheet" href="styles.css?v=20260804datasetvisual1" />
     <link rel="stylesheet" href="scholarly-ui.css?v=20260728surface1" />
-    <link rel="stylesheet" href="house.css?v=20260814hero1" />
+    <link rel="stylesheet" href="house.css?v=20260814figures1" />
     <link rel="stylesheet" href="final-quality-control.css?v=20260814polish1" />
     <link rel="stylesheet" href="standalone.css?v=20260814home1" />
   </head>
@@ -280,32 +280,41 @@
       <section class="house-trajectory" aria-labelledby="houseTrajectoryTitle">
         <header class="house-trajectory-heading">
           <div>
-            <span class="eyebrow">Across the full weight range</span>
-            <h2 id="houseTrajectoryTitle">Democratic share of all 435 House seats</h2>
+            <span class="eyebrow">House across the weight range</span>
+            <h2 id="houseTrajectoryTitle">See how the House changes</h2>
+            <p class="house-trajectory-deck">
+              Move <i>w</i>—or choose a point on the line—to see how the Democratic share of all
+              435 seats changes.
+            </p>
           </div>
-          <p id="houseTrajectoryReading">Loading the seat-share path…</p>
+          <span class="house-trajectory-count">One chart</span>
         </header>
-        <div
-          class="house-chart-scroll"
-          tabindex="0"
-          role="region"
-          aria-labelledby="houseTrajectoryTitle"
-          aria-describedby="houseTrajectoryDescription"
-        >
-          <svg
-            id="houseSeatShareChart"
-            class="house-seat-share-chart"
-            viewBox="0 0 960 440"
-            role="img"
-            aria-labelledby="houseTrajectorySvgTitle"
+        <div class="house-trajectory-panel">
+          <p id="houseTrajectoryReading" class="house-trajectory-reading">
+            Loading the seat-share path…
+          </p>
+          <div
+            class="house-chart-scroll"
+            tabindex="0"
+            role="region"
+            aria-labelledby="houseTrajectoryTitle"
             aria-describedby="houseTrajectoryDescription"
           >
-            <title id="houseTrajectorySvgTitle">Democratic share of all 435 House seats by statewide weight</title>
-            <desc id="houseTrajectoryDescription">The step line shows the Democratic share of all 435 seats from w equals zero through one. Outside-panel assignments remain fixed, and a marker identifies the selected weight.</desc>
-          </svg>
+            <svg
+              id="houseSeatShareChart"
+              class="house-seat-share-chart"
+              viewBox="0 0 960 440"
+              role="img"
+              aria-labelledby="houseTrajectorySvgTitle"
+              aria-describedby="houseTrajectoryDescription"
+            >
+              <title id="houseTrajectorySvgTitle">Democratic share of all 435 House seats by statewide weight</title>
+              <desc id="houseTrajectoryDescription">The step line shows the Democratic share of all 435 seats from w equals zero through one. Outside-panel assignments remain fixed, and a marker identifies the selected weight.</desc>
+            </svg>
+          </div>
+          <p id="houseChartScale" class="house-chart-scale-note">Focused vertical scale will appear after the year loads.</p>
+          <p class="house-chart-cue" aria-hidden="true">Swipe horizontally to inspect the full chart</p>
         </div>
-        <p id="houseChartScale" class="house-chart-scale-note">Focused vertical scale will appear after the year loads.</p>
-        <p class="house-chart-cue" aria-hidden="true">Swipe horizontally to inspect the full chart</p>
       </section>
     </main>
 
