@@ -809,5 +809,9 @@ check(
   !/(?:paper|methodology|state-lab|allocation-lab|gerrymander-lab|comparison)\.html/.test(houseHtml),
   "House page does not link to pages excluded from the conference publication",
 );
+check(
+  !houseJs.includes("The House total changes only when a state crosses a switching point."),
+  "House weight reading omits the removed switching-point explanation",
+);
 
 console.log(`House aggregation audit passed: ${assertionCount.toLocaleString()} assertions.`);
