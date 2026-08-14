@@ -735,6 +735,31 @@ check(
   "House chart exposes its changing description without an overridden aria-label",
 );
 check(
+  /<header class="house-trajectory-heading">[\s\S]*?<span class="eyebrow">House across the weight range<\/span>[\s\S]*?<h2 id="houseTrajectoryTitle">See how the House changes<\/h2>[\s\S]*?<p class="house-trajectory-deck">[\s\S]*?<span class="house-trajectory-count">One chart<\/span>/.test(
+    houseHtml,
+  ),
+  "House trajectory uses the same editorial chapter hierarchy as the State figures",
+);
+check(
+  /<div class="house-trajectory-panel">[\s\S]*?<p id="houseTrajectoryReading" class="house-trajectory-reading">[\s\S]*?<div\s+class="house-chart-scroll"[\s\S]*?id="houseSeatShareChart"[\s\S]*?id="houseChartScale"/.test(
+    houseHtml,
+  ),
+  "House trajectory keeps the live reading and interactive chart in a separate panel",
+);
+check(
+  /\.house-trajectory-heading\s*\{[\s\S]*?min-height:\s*210px[\s\S]*?border-radius:\s*18px 14px 20px 16px[\s\S]*?background:\s*var\(--ink, #17231f\)[\s\S]*?box-shadow:/.test(
+    houseCss,
+  ) &&
+    /\.house-trajectory-heading \.eyebrow\s*\{[\s\S]*?color:\s*#f6d77e/.test(houseCss) &&
+    /\.house-trajectory-count\s*\{[\s\S]*?color:\s*#f6d77e/.test(houseCss),
+  "House trajectory banner matches the State figures’ ink, gold, radius, and shadow treatment",
+);
+check(
+  /\.house-trajectory-panel\s*\{[\s\S]*?background:\s*var\(--house-paper\)/.test(houseCss) &&
+    /\.house-chart-scroll\s*\{[\s\S]*?overflow-x:\s*auto/.test(houseCss),
+  "House trajectory chart remains a separate warm-paper, horizontally scrollable surface",
+);
+check(
   !/houseCoverageHeadline|house-scope-card/.test(`${houseHtml}\n${houseJs}\n${houseCss}`),
   "House hero removes the former coverage card and its script dependency",
 );
