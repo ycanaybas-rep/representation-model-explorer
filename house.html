@@ -28,7 +28,7 @@
     <link rel="apple-touch-icon" href="apple-touch-icon-two-party-v2.png?v=20260728brand2" />
     <link rel="stylesheet" href="styles.css?v=20260804datasetvisual1" />
     <link rel="stylesheet" href="scholarly-ui.css?v=20260728surface1" />
-    <link rel="stylesheet" href="house.css?v=20260814fixedcolors1" />
+    <link rel="stylesheet" href="house.css?v=20260814hero1" />
     <link rel="stylesheet" href="final-quality-control.css?v=20260814polish1" />
     <link rel="stylesheet" href="standalone.css?v=20260814home1" />
   </head>
@@ -58,23 +58,68 @@
     </header>
 
     <main id="mainContent" class="house-main">
-      <section class="house-intro" aria-labelledby="housePageTitle">
+      <section
+        class="house-intro"
+        aria-labelledby="housePageTitle"
+        aria-describedby="houseHeroQuestion"
+      >
         <div class="house-intro-copy">
-          <span class="eyebrow">House Explorer</span>
-          <h1 id="housePageTitle">Move one weight. Watch the House change.</h1>
-          <p>
-            Apply the same statewide weight to every covered state. Each state delegation is solved
-            separately under <a class="house-inline-paper" href="references/representation-in-district-based-elections.pdf" target="_blank" rel="noopener">the paper’s linear benchmark</a>. Seats outside the panel keep their observed election assignments as <i>w</i> changes.
+          <h1 id="housePageTitle">
+            <span class="house-hero-line house-hero-line-weight">One weight.</span>
+            <span class="house-hero-line house-hero-line-states">
+              <span>Across the states.</span>
+              <img
+                class="hero-local-oval"
+                src="assets/hero-local-oval-blue-v1.png?v=20260728heromarks1"
+                width="1400"
+                height="440"
+                alt=""
+                aria-hidden="true"
+              />
+            </span>
+            <span class="house-hero-line house-hero-line-house">
+              <img
+                class="hero-statewide-underline"
+                src="assets/hero-statewide-underline-red-v1.png?v=20260728heropen1"
+                width="1800"
+                height="240"
+                alt=""
+                aria-hidden="true"
+              />
+              <em>One House.</em>
+            </span>
+          </h1>
+          <p id="houseHeroQuestion" class="house-hero-question">
+            Each state sends its own delegation to Congress. What happens to the House when every covered state uses the same weight?
           </p>
+          <nav class="house-hero-actions" aria-label="House Explorer shortcuts">
+            <a class="house-hero-action house-hero-action-primary" href="#houseControls">
+              Explore the House
+            </a>
+            <a
+              class="house-hero-action house-hero-action-secondary"
+              href="references/representation-in-district-based-elections.pdf"
+              target="_blank"
+              rel="noopener"
+            >
+              Read the paper
+              <img src="assets/tabler-download.svg" width="22" height="22" alt="" />
+            </a>
+          </nav>
         </div>
-        <aside class="house-scope-card" aria-label="House Explorer scope">
-          <span>Data coverage</span>
-          <strong id="houseCoverageHeadline">Loading the election panel…</strong>
-          <small>Covered states are modeled · remaining seats stay fixed</small>
-        </aside>
+        <figure class="house-hero-visual">
+          <img
+            src="assets/representation-model-hero-two-party.png?v=20260728twoparty1"
+            width="1100"
+            height="1100"
+            alt="A hand-drawn diagram of Democratic and Republican district results flowing through a weighted rule into a delegation."
+            decoding="async"
+            fetchpriority="high"
+          />
+        </figure>
       </section>
 
-      <section class="house-controls" aria-labelledby="houseControlsTitle">
+      <section id="houseControls" class="house-controls" aria-labelledby="houseControlsTitle">
         <div class="house-control-heading">
           <div>
             <span class="eyebrow">Shared model controls</span>
@@ -276,9 +321,9 @@
       </div>
     </footer>
 
-    <script src="site.js?v=20260814polish1" defer></script>
+    <script src="site.js?v=20260814hero1" defer></script>
     <script src="election-data.js?v=20260804dataset1" defer></script>
     <script src="script.js?v=20260814polish1" defer></script>
-    <script src="house.js?v=20260814fixedcolors1" defer></script>
+    <script src="house.js?v=20260814hero1" defer></script>
   </body>
 </html>

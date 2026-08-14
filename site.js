@@ -21,7 +21,7 @@ document.addEventListener("DOMContentLoaded", () => {
   window.addEventListener("scroll", requestProgressUpdate, { passive: true });
   window.addEventListener("resize", requestProgressUpdate);
 
-  const hero = document.querySelector(".explorer-hero");
+  const hero = document.querySelector(".explorer-hero, .house-intro");
   const heroAnnotations = hero?.querySelectorAll(
     ".hero-local-oval, .hero-statewide-underline",
   );

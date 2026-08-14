@@ -506,7 +506,6 @@
     if (!engine) throw new Error("The model engine did not load.");
 
     const ids = [
-      "houseCoverageHeadline",
       "houseYearSelect",
       "houseCoverageDetail",
       "houseWeight",
@@ -619,7 +618,6 @@
     function renderYearInputs() {
       const model = activeYearModel;
       elements.houseYearSelect.value = String(model.year);
-      elements.houseCoverageHeadline.textContent = `${model.totalSeats} modeled seats · ${model.uncoveredSeats} fixed seats`;
       elements.houseCoverageDetail.textContent = formatCoverageDetail(model);
       elements.houseCoverageValue.textContent = `${model.totalSeats} of ${FULL_HOUSE_SEATS} seats`;
       elements.houseCoverageBar.style.width = `${(model.totalSeats / FULL_HOUSE_SEATS) * 100}%`;
