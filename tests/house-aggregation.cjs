@@ -140,6 +140,8 @@ const atZero = house.computeHouseSnapshot(model2024, 0);
 equal(atZero.demSeats, model2024.fptpDemSeats, "w=0 aggregates state FPTP Democratic seats");
 equal(atZero.repSeats, model2024.fptpRepSeats, "w=0 aggregates state FPTP Republican seats");
 equal(atZero.flips, 0, "w=0 retains every local plurality winner");
+equal(atZero.democraticSwitches, 0, "w=0 has no switches to Democratic assignments");
+equal(atZero.republicanSwitches, 0, "w=0 has no switches to Republican assignments");
 equal(atZero.fullDemSeats, model2024.fullFptpDemSeats, "w=0 begins at the full Democratic result");
 equal(atZero.fullRepSeats, model2024.fullFptpRepSeats, "w=0 begins at the full Republican result");
 
@@ -170,6 +172,27 @@ const getYearModel = (year) => {
   if (!yearModels.has(year)) yearModels.set(year, house.buildYearModel(engine, year));
   return yearModels.get(year);
 };
+
+const visible2018Switch = house.computeHouseSnapshot(getYearModel(2018), 0.00325);
+deepEqual(
+  [
+    visible2018Switch.flips,
+    visible2018Switch.democraticSwitches,
+    visible2018Switch.republicanSwitches,
+  ],
+  [2, 2, 0],
+  "2018 at w=0.003250 reports the visible total and destination-party breakdown",
+);
+const mixedDirectionSwitch = house.computeHouseSnapshot(getYearModel(2010), 0.00325);
+deepEqual(
+  [
+    mixedDirectionSwitch.flips,
+    mixedDirectionSwitch.democraticSwitches,
+    mixedDirectionSwitch.republicanSwitches,
+  ],
+  [2, 1, 1],
+  "2010 at w=0.003250 preserves simultaneous switches in both party directions",
+);
 
 for (const [year, expected] of [
   [2000, [212, 221, 2]],
@@ -404,6 +427,24 @@ for (const year of availableYears) {
       snapshot.stateResults.reduce((total, state) => total + state.flips, 0),
       `${year} at w=${weight}: changed-district total sums the state optima`,
     );
+    check(
+      Number.isInteger(snapshot.democraticSwitches) && snapshot.democraticSwitches >= 0,
+      `${year} at w=${weight}: Democratic switch count is a nonnegative integer`,
+    );
+    check(
+      Number.isInteger(snapshot.republicanSwitches) && snapshot.republicanSwitches >= 0,
+      `${year} at w=${weight}: Republican switch count is a nonnegative integer`,
+    );
+    equal(
+      snapshot.democraticSwitches + snapshot.republicanSwitches,
+      snapshot.flips,
+      `${year} at w=${weight}: destination-party switches sum to changed districts`,
+    );
+    equal(
+      snapshot.democraticSwitches - snapshot.republicanSwitches,
+      snapshot.demSeats - yearModel.fptpDemSeats,
+      `${year} at w=${weight}: directional switches reproduce the net Democratic seat change`,
+    );
     equal(
       snapshot.flips + snapshot.pluralityRetained,
       yearModel.totalSeats,
@@ -506,6 +547,20 @@ for (const year of availableYears) {
         stateResult.flips,
         direct.flips,
         `${year} ${stateResult.name} at w=${weight}: changed districts use the direct optimum`,
+      );
+      const directionalSwitches = house.countDirectionalSwitches(
+        state.districts,
+        direct.assignment,
+      );
+      equal(
+        stateResult.democraticSwitches,
+        directionalSwitches.democratic,
+        `${year} ${stateResult.name} at w=${weight}: switches to Democratic are counted from district assignments`,
+      );
+      equal(
+        stateResult.republicanSwitches,
+        directionalSwitches.republican,
+        `${year} ${stateResult.name} at w=${weight}: switches to Republican are counted from district assignments`,
       );
     }
   }
@@ -620,7 +675,10 @@ const requiredHouseIds = [
   "houseRepVoteShare",
   "houseFptpSeats",
   "houseProportionalSeats",
+  "houseChangedSummary",
   "houseDistrictsChanged",
+  "houseDemocraticSwitches",
+  "houseRepublicanSwitches",
   "houseSeatShareChart",
   "houseTrajectoryDescription",
   "houseTrajectoryReading",
@@ -684,6 +742,14 @@ equal(
   (summaryMarkup.match(/<article class="house-summary-card">/g) || []).length,
   3,
   "House page contains exactly the three requested summary cards",
+);
+check(
+  /<dt>To Democratic<\/dt>\s*<dd id="houseDemocraticSwitches">/.test(summaryMarkup),
+  "Changed-district card labels switches to Democratic assignments",
+);
+check(
+  /<dt>To Republican<\/dt>\s*<dd id="houseRepublicanSwitches">/.test(summaryMarkup),
+  "Changed-district card labels switches to Republican assignments",
 );
 [
   "Modeled Democratic",
