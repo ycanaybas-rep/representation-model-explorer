@@ -917,7 +917,7 @@
           "At w = 1, each state reaches its nearest whole-seat proportional target; district placement no longer affects the objective.";
         return;
       }
-      elements.houseWeightReading.textContent = `${formatWeightShare(1 - snapshot.weight, engine)} local district results · ${formatWeightShare(snapshot.weight, engine)} statewide representation. The House total changes only when a state crosses a switching point.`;
+      elements.houseWeightReading.textContent = `${formatWeightShare(1 - snapshot.weight, engine)} local district results · ${formatWeightShare(snapshot.weight, engine)} statewide representation.`;
     }
 
     function renderSwitchReading(weight) {

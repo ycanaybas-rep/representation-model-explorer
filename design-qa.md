@@ -165,3 +165,45 @@ final result: passed
 4. Compared the focused banner and full page at desktop and compact-phone sizes; no P0, P1, or P2 visual differences remain.
 
 final result: passed
+
+---
+
+# House weight-reading copy removal design QA
+
+## Source truth
+
+- User-selected control panel: `/var/folders/v9/fdxck81j7x7grf7fdqrs83h80000gp/T/codex-clipboard-d010141b-6371-47c3-9e72-9e765ff909cd.png`
+- Revised implementation crop: `/Users/aybas/.codex/visualizations/2026/08/14/01a000dc-2a39-78c3-8df9-8f74a1fce54f/house-weight-reading-removal-implementation.png`
+- Combined comparison: `/Users/aybas/.codex/visualizations/2026/08/14/01a000dc-2a39-78c3-8df9-8f74a1fce54f/house-weight-reading-removal-comparison.png`
+
+## Capture conditions
+
+- Page state: House Explorer, 2018, `w = 0.003250`.
+- Desktop browser viewport: 1280 × 720 CSS pixels at 1× density.
+- Source image: 2048 × 447 pixels, normalized to 1280 × 289 pixels.
+- Implementation control panel: 1220 × 383 pixels, normalized to 1280 × 402 pixels.
+- Compact check: 390 × 844 CSS pixels at 1× density.
+
+## Findings
+
+- No P0, P1, or P2 differences remain. The selected sentence is absent and the retained reading is exactly “99.7% local district results · 0.325% statewide representation.”
+- Fonts and typography: the existing weight, percentage, and bold reading styles are unchanged.
+- Spacing and layout rhythm: the shorter reading stays aligned inside the same bordered status strip; no empty placeholder or unexpected gap appears.
+- Colors and visual tokens: the paper surface, ink text, and gold edge remain unchanged.
+- Image quality and asset fidelity: this text-only edit introduces no image or icon changes.
+- Copy and content: only “The House total changes only when a state crosses a switching point.” was removed; the live percentages remain dynamic.
+
+## Responsive and interaction checks
+
+- Desktop: the 2018 reading renders on one line with no horizontal page overflow.
+- 390 × 844: the retained reading wraps naturally, the panel remains within the viewport, and no horizontal page overflow appears.
+- Changing `w` continues to update both displayed percentages through the existing calculation path.
+- Browser console contained no warnings or errors.
+
+## Comparison history
+
+1. Removed the requested trailing sentence from the dynamic House weight reading.
+2. Added a regression assertion that prevents the removed copy from returning.
+3. Compared the source and revised control panel in one combined image; no further visual correction was required.
+
+final result: passed
