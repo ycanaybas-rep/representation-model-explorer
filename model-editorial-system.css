@@ -1223,10 +1223,6 @@ body[data-page="explorer"] .footer-brand span {
   color: #f6d77e;
 }
 
-body[data-page="explorer"] .site-footer .footer-inner > p {
-  color: #c9c4c9;
-}
-
 @media (max-width: 979px) {
   body[data-page="explorer"] .guided-profile-panel {
     box-shadow: inset 4px 0 0 color-mix(in srgb, var(--editorial-blue) 66%, transparent);
@@ -1305,6 +1301,19 @@ body[data-page="explorer"] .site-footer .footer-inner > p {
     border-top-color: #7e7e7e;
     color: #17231f;
     background: #ffffff;
+  }
+
+  body[data-page="explorer"] .footer-brand strong {
+    color: #17231f;
+  }
+
+  body[data-page="explorer"] .footer-authors {
+    color: #4e5a56;
+  }
+
+  body[data-page="explorer"] .footer-authors a {
+    color: #18514c;
+    text-decoration-color: rgba(24, 81, 76, 0.52);
   }
 }
 

@@ -44,6 +44,39 @@ final result: passed
 
 ---
 
+# Footer author-links design QA
+
+## Source truth
+
+- User-selected footer: `/var/folders/v9/fdxck81j7x7grf7fdqrs83h80000gp/T/codex-clipboard-46e3a710-6d8e-4836-8c9d-8f3b8e16e51e.png`
+- State implementation crop: `/Users/aybas/.codex/visualizations/2026/08/14/01a000dc-2a39-78c3-8df9-8f74a1fce54f/footer-authors-implementation.png`
+- Combined source and implementation comparison: `/Users/aybas/.codex/visualizations/2026/08/14/01a000dc-2a39-78c3-8df9-8f74a1fce54f/footer-authors-source-vs-implementation.png`
+
+## Visual comparison
+
+- The right-side explanatory sentence and obsolete methods link are replaced by the three paper authors in one compact row.
+- Yunus C. Aybas and Oğuzhan Çelebi use clearly underlined personal-site links; Surabhi Dutt remains plain text because no personal website is available.
+- Gold separators preserve the footer’s existing ink, paper, teal, and gold visual system without competing with the brand lockup.
+- The footer remains compact at desktop widths and wraps safely below the brand on small screens.
+
+## Responsive and interaction checks
+
+- State and House at 1280 × 720: all names appear, both personal-site URLs are correct, and no horizontal overflow is present.
+- State and House at 390 × 844: all names remain visible in one wrapping row, author link targets retain at least 44px height, and no page-level horizontal overflow is present.
+- Keyboard focus uses a solid, high-contrast teal outline; hover color uses the established warm gold.
+- State and House browser consoles contained no warnings or errors.
+
+## Iteration history
+
+1. Replaced the two page-specific footer sentences with one shared author list.
+2. Added verified personal-site links for Aybas and Çelebi while leaving Dutt unlinked.
+3. Added shared wrapping, hover, focus, and mobile target-size styles.
+4. Compared the source and implementation in one combined image and checked both pages at desktop and compact-phone widths.
+
+final result: passed
+
+---
+
 # State supporting-notes removal design QA
 
 ## Source truth
