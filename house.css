@@ -1213,6 +1213,10 @@ body[data-page="house"].hero-annotations-ready.hero-annotations-revealed
     width: 100%;
     min-width: 0;
   }
+
+  .house-controls {
+    scroll-margin-top: 126px;
+  }
 }
 
 @media (max-width: 620px) {
@@ -1269,8 +1273,11 @@ body[data-page="house"].hero-annotations-ready.hero-annotations-revealed
   }
 
   .house-trajectory-count {
-    align-self: flex-start;
-    padding-bottom: 0;
+    display: none;
+  }
+
+  .house-trajectory {
+    margin-top: 44px;
   }
 
   .house-control-grid {
@@ -1322,7 +1329,33 @@ body[data-page="house"].hero-annotations-ready.hero-annotations-revealed
   }
 
   .house-chamber {
-    height: clamp(205px, 62vw, 270px);
+    height: auto;
+    aspect-ratio: 2.3 / 1;
+  }
+
+  .house-seat.is-switched {
+    box-shadow:
+      0 0 0 0.8px #fffefa,
+      0 0 0 2px #f2be22,
+      0 0 0 3.2px #17231f,
+      0 1px 3px rgba(23, 35, 31, 0.25);
+  }
+
+  .house-chamber-legend {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px 12px;
+    justify-items: start;
+    margin-top: 16px;
+    font-size: 0.75rem;
+    line-height: 1.3;
+  }
+
+  .house-chamber-note {
+    margin-top: 12px;
+    font-size: 0.78rem;
+    line-height: 1.5;
+    text-align: left;
   }
 
   .house-summary-cards {
@@ -1335,11 +1368,53 @@ body[data-page="house"].hero-annotations-ready.hero-annotations-revealed
 
   .house-chart-cue {
     display: block;
+    font-size: 0.78rem;
+    text-align: left;
   }
 
   .house-chart-scroll {
-    scrollbar-color: var(--gold, #d4a64a) transparent;
-    scrollbar-width: thin;
+    overflow-x: hidden;
+  }
+
+  .house-seat-share-chart {
+    width: 100%;
+    min-width: 0;
+    touch-action: manipulation;
+  }
+
+  .house-chart-y-title-compact {
+    text-anchor: start;
+  }
+
+  .house-chart-scale-note {
+    font-size: 0.78rem;
+  }
+}
+
+@media (max-width: 500px) {
+  .house-vote-seat-band {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-areas:
+      "bar bar"
+      "dem rep";
+    gap: 10px 14px;
+  }
+
+  .house-seat-bar-wrap {
+    grid-area: bar;
+  }
+
+  .house-vote-share.is-dem {
+    grid-area: dem;
+  }
+
+  .house-vote-share.is-rep {
+    grid-area: rep;
+  }
+
+  .house-vote-share span,
+  .house-seat-bar-wrap > span {
+    font-size: 0.7rem;
   }
 }
 
@@ -1368,46 +1443,6 @@ body[data-page="house"].hero-annotations-ready.hero-annotations-revealed
 
   .house-weight-tools button {
     flex: 1 1 130px;
-  }
-
-  .house-seat-summary {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 13px;
-  }
-
-  .house-total-divider {
-    width: 100%;
-    height: 1px;
-  }
-
-  .house-party-total.is-rep {
-    justify-content: flex-start;
-    text-align: left;
-  }
-
-  .house-vote-seat-band {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-template-areas:
-      "bar bar"
-      "dem rep";
-    gap: 10px 14px;
-  }
-
-  .house-seat-bar-wrap {
-    grid-area: bar;
-  }
-
-  .house-vote-share.is-dem {
-    grid-area: dem;
-  }
-
-  .house-vote-share.is-rep {
-    grid-area: rep;
-  }
-
-  .house-vote-share span,
-  .house-seat-bar-wrap > span {
-    font-size: 0.68rem;
   }
 
   .house-coverage-meter {
@@ -1440,7 +1475,7 @@ body[data-page="house"].hero-annotations-ready.hero-annotations-revealed
   }
 
   .house-party-total strong {
-    font-size: 2.65rem;
+    font-size: 2.45rem;
   }
 }
 

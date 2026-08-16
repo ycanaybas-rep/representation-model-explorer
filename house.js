@@ -23,11 +23,43 @@
   const SWITCH_TOLERANCE = 1e-10;
   const CHAMBER_ROWS = 12;
   const SVG_NAMESPACE = "http://www.w3.org/2000/svg";
-  const HOUSE_CHART_VIEWBOX = Object.freeze({
-    width: 960,
-    height: 440,
-    margin: Object.freeze({ top: 30, right: 32, bottom: 68, left: 86 }),
+  const HOUSE_CHART_LAYOUTS = Object.freeze({
+    desktop: Object.freeze({
+      mode: "desktop",
+      width: 960,
+      height: 440,
+      margin: Object.freeze({ top: 30, right: 32, bottom: 68, left: 86 }),
+      xTicks: Object.freeze([0, 0.25, 0.5, 0.75, 1]),
+      yTickCount: 5,
+      showEventPoints: true,
+      majorityLabel: "218-seat majority",
+    }),
+    compact: Object.freeze({
+      mode: "compact",
+      width: 360,
+      height: 300,
+      margin: Object.freeze({ top: 38, right: 14, bottom: 56, left: 54 }),
+      xTicks: Object.freeze([0, 0.5, 1]),
+      yTickCount: 4,
+      showEventPoints: false,
+      majorityLabel: "218 majority",
+    }),
   });
+
+  function getHouseChartLayout(compact = false) {
+    return compact ? HOUSE_CHART_LAYOUTS.compact : HOUSE_CHART_LAYOUTS.desktop;
+  }
+
+  function getWeightFromChartPoint(clientX, bounds, layout) {
+    if (!bounds || !Number.isFinite(bounds.width) || bounds.width <= 0) {
+      return DEFAULT_WEIGHT;
+    }
+    const viewboxX = ((Number(clientX) - bounds.left) / bounds.width) * layout.width;
+    const { margin, width } = layout;
+    return clampWeight(
+      (viewboxX - margin.left) / (width - margin.left - margin.right),
+    );
+  }
 
   function clampWeight(value) {
     const numeric = Number(value);
@@ -626,6 +658,8 @@
     let activeSnapshot = null;
     let activeSeatShareSeries = null;
     let activeChartDomain = null;
+    const compactChartQuery = window.matchMedia("(max-width: 620px)");
+    let activeChartLayout = getHouseChartLayout(compactChartQuery.matches);
     let chamberSeats = [];
     let renderFrame = 0;
     let lastCompositionKey = "";
@@ -662,6 +696,17 @@
       moveToComposition(1);
     });
     elements.houseSeatShareChart.addEventListener("click", handleChartClick);
+    const handleChartLayoutChange = () => {
+      activeChartLayout = getHouseChartLayout(compactChartQuery.matches);
+      if (!activeSeatShareSeries || !activeChartDomain) return;
+      renderSeatShareChart(activeSeatShareSeries, activeChartDomain);
+      if (activeSnapshot) updateCurrentChartMarker(activeSnapshot);
+    };
+    if (typeof compactChartQuery.addEventListener === "function") {
+      compactChartQuery.addEventListener("change", handleChartLayoutChange);
+    } else if (typeof compactChartQuery.addListener === "function") {
+      compactChartQuery.addListener(handleChartLayoutChange);
+    }
 
     loadYear(initial.year);
 
@@ -778,7 +823,17 @@
 
     function renderSeatShareChart(series, domain) {
       const svg = elements.houseSeatShareChart;
-      const { width, height, margin } = HOUSE_CHART_VIEWBOX;
+      activeChartLayout = getHouseChartLayout(compactChartQuery.matches);
+      const {
+        width,
+        height,
+        margin,
+        xTicks,
+        yTickCount,
+        showEventPoints,
+        majorityLabel,
+        mode,
+      } = activeChartLayout;
       const plotWidth = width - margin.left - margin.right;
       const plotHeight = height - margin.top - margin.bottom;
       const x = (weight) => margin.left + clampWeight(weight) * plotWidth;
@@ -793,8 +848,8 @@
       elements.houseChartScale.textContent = `Focused vertical scale: ${formatPercent(domain.min, 1)}–${formatPercent(domain.max, 1)}.`;
 
       const grid = createSvgElement("g", { class: "house-chart-grid" });
-      const yTicks = Array.from({ length: 5 }, (_, index) =>
-        domain.min + ((domain.max - domain.min) * index) / 4,
+      const yTicks = Array.from({ length: yTickCount }, (_, index) =>
+        domain.min + ((domain.max - domain.min) * index) / (yTickCount - 1),
       );
       yTicks.forEach((tick) => {
         const position = y(tick);
@@ -830,7 +885,7 @@
           x: width - margin.right - 4,
           y: y(majorityShare) - 8,
         });
-        label.textContent = "218-seat majority";
+        label.textContent = majorityLabel;
         majority.append(label);
         grid.append(majority);
       }
@@ -844,7 +899,7 @@
           y2: height - margin.bottom,
         }),
       );
-      [0, 0.25, 0.5, 0.75, 1].forEach((tick) => {
+      xTicks.forEach((tick) => {
         const position = x(tick);
         axes.append(
           createSvgElement("line", {
@@ -859,7 +914,7 @@
           y: height - margin.bottom + 27,
           class: "house-chart-tick-label house-chart-x-tick",
         });
-        label.textContent = tick.toFixed(tick === 0 || tick === 1 ? 0 : 2);
+        label.textContent = tick.toFixed(tick === 0 || tick === 1 ? 0 : mode === "compact" ? 1 : 2);
         axes.append(label);
       });
 
@@ -869,13 +924,21 @@
         class: "house-chart-axis-title house-chart-x-title",
       });
       xLabel.textContent = "Statewide weight w";
-      const yLabel = createSvgElement("text", {
-        x: 18,
-        y: margin.top + plotHeight / 2,
-        class: "house-chart-axis-title house-chart-y-title",
-        transform: `rotate(-90 18 ${margin.top + plotHeight / 2})`,
-      });
-      yLabel.textContent = "Democratic share of all 435 seats";
+      const yLabel = mode === "compact"
+        ? createSvgElement("text", {
+          x: margin.left,
+          y: 21,
+          class: "house-chart-axis-title house-chart-y-title house-chart-y-title-compact",
+        })
+        : createSvgElement("text", {
+          x: 18,
+          y: margin.top + plotHeight / 2,
+          class: "house-chart-axis-title house-chart-y-title",
+          transform: `rotate(-90 18 ${margin.top + plotHeight / 2})`,
+        });
+      yLabel.textContent = mode === "compact"
+        ? "Democratic House share"
+        : "Democratic share of all 435 seats";
       axes.append(xLabel, yLabel);
 
       const pathData = series.vertices
@@ -889,15 +952,17 @@
         class: "house-chart-events",
         "aria-hidden": "true",
       });
-      series.events.forEach((event) => {
-        eventPoints.append(
-          createSvgElement("circle", {
-            cx: x(event.weight),
-            cy: y(event.exactDemSeats / series.totalSeats),
-            r: 2.8,
-          }),
-        );
-      });
+      if (showEventPoints) {
+        series.events.forEach((event) => {
+          eventPoints.append(
+            createSvgElement("circle", {
+              cx: x(event.weight),
+              cy: y(event.exactDemSeats / series.totalSeats),
+              r: 2.8,
+            }),
+          );
+        });
+      }
       const currentGuide = createSvgElement("line", {
         id: "houseChartCurrentGuide",
         class: "house-chart-current-guide",
@@ -907,9 +972,11 @@
       const currentPoint = createSvgElement("circle", {
         id: "houseChartCurrentPoint",
         class: "house-chart-current-point",
-        r: 7,
+        r: mode === "compact" ? 6 : 7,
       });
 
+      svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+      svg.dataset.chartMode = mode;
       svg.dataset.plotLeft = String(margin.left);
       svg.dataset.plotRight = String(width - margin.right);
       svg.dataset.yMin = String(domain.min);
@@ -919,7 +986,7 @@
 
     function updateCurrentChartMarker(snapshot) {
       if (!activeChartDomain) return;
-      const { width, height, margin } = HOUSE_CHART_VIEWBOX;
+      const { width, height, margin } = activeChartLayout;
       const plotWidth = width - margin.left - margin.right;
       const plotHeight = height - margin.top - margin.bottom;
       const x = margin.left + snapshot.weight * plotWidth;
@@ -943,10 +1010,10 @@
     function handleChartClick(event) {
       const bounds = elements.houseSeatShareChart.getBoundingClientRect();
       if (!bounds.width) return;
-      const viewboxX = ((event.clientX - bounds.left) / bounds.width) * HOUSE_CHART_VIEWBOX.width;
-      const { margin, width } = HOUSE_CHART_VIEWBOX;
-      const weight = clampWeight(
-        (viewboxX - margin.left) / (width - margin.left - margin.right),
+      const weight = getWeightFromChartPoint(
+        event.clientX,
+        bounds,
+        activeChartLayout,
       );
       elements.houseWeight.value = String(weight);
       renderCurrentWeight(true);
@@ -1095,9 +1162,12 @@
 
   const api = {
     FULL_HOUSE_SEATS,
+    HOUSE_CHART_LAYOUTS,
     OUTSIDE_PANEL_SEATS_BY_YEAR,
     SWITCH_TOLERANCE,
     clampWeight,
+    getHouseChartLayout,
+    getWeightFromChartPoint,
     getAvailableYears,
     buildYearModel,
     buildSwitchGroups,
