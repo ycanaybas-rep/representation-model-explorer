@@ -944,10 +944,10 @@ check(
   "House chart preserves its geometry and exposes its changing description",
 );
 check(
-  /<header class="house-trajectory-heading">[\s\S]*?<span class="eyebrow">House across the weight range<\/span>[\s\S]*?<h2 id="houseTrajectoryTitle">See how the House changes<\/h2>[\s\S]*?<p class="house-trajectory-deck">[\s\S]*?<span class="house-trajectory-count">One chart<\/span>/.test(
+  /<header class="house-trajectory-heading">[\s\S]*?<span class="eyebrow">House across the weight range<\/span>[\s\S]*?<h2 id="houseTrajectoryTitle">[\s\S]*?See how the[\s\S]*?class="section-title-marked-words">House<\/span>[\s\S]*?class="section-title-underline"[\s\S]*?changes[\s\S]*?<\/h2>[\s\S]*?<p class="house-trajectory-deck">[\s\S]*?<span class="house-trajectory-count">One chart<\/span>/.test(
     houseHtml,
   ),
-  "House trajectory uses the same editorial chapter hierarchy as the State figures",
+  "House trajectory uses the State chapter hierarchy with a bundled hand-drawn title mark",
 );
 check(
   /<div class="house-trajectory-panel">[\s\S]*?<p id="houseTrajectoryReading" class="house-trajectory-reading">[\s\S]*?<div\s+id="houseChartRegion"\s+class="house-chart-scroll"[\s\S]*?id="houseSeatShareChart"[\s\S]*?id="houseChartScale"/.test(
