@@ -49,7 +49,60 @@ equal(engine.MAX_FORMULA_SOURCE_LENGTH, 256, "live and permalink formulas share 
   equal(engine.parseWeightInput(source), null, `manual weight rejects ${JSON.stringify(source)}`);
 });
 
+const rememberedStateUrl =
+  "https://representation.yunusaybas.com/?sv=1&state=ca&year=2024&plan=ca52-schematic-v2&data=for-website-2026-08-04-v1-ca-2024&method=1.0.0&w=0.000886&spec=baseline&target=proportional&map=model&allocation=optimal";
+const housePageUrl = "https://representation.yunusaybas.com/house.html?year=2024&w=0.000886";
+equal(
+  engine.normalizeStatePageUrl(rememberedStateUrl, housePageUrl),
+  rememberedStateUrl,
+  "a same-origin State scenario is accepted as a return destination",
+);
+equal(
+  engine.getRememberedStateScenarioUrl({ getItem: () => rememberedStateUrl }, housePageUrl),
+  rememberedStateUrl,
+  "House restores the complete remembered State scenario",
+);
+equal(
+  engine.validateStateScenarioUrl(rememberedStateUrl, housePageUrl),
+  rememberedStateUrl,
+  "a House return parameter restores the complete State scenario without storage",
+);
+equal(
+  engine.getRememberedStateScenarioUrl(
+    { getItem: () => "https://attacker.example/?sv=1" },
+    housePageUrl,
+  ),
+  null,
+  "an external remembered destination is rejected",
+);
+equal(
+  engine.getRememberedStateScenarioUrl(
+    { getItem: () => "https://representation.yunusaybas.com/?sv=1&state=ca" },
+    housePageUrl,
+  ),
+  null,
+  "an incomplete remembered scenario is rejected",
+);
+equal(
+  engine.getRememberedStateScenarioUrl(
+    { getItem: () => { throw new Error("storage unavailable"); } },
+    housePageUrl,
+  ),
+  null,
+  "unavailable browser storage leaves the static State link usable",
+);
+equal(
+  engine.rememberStateScenarioUrl(
+    rememberedStateUrl,
+    { setItem: () => { throw new Error("storage unavailable"); } },
+    housePageUrl,
+  ),
+  rememberedStateUrl,
+  "the current State tab keeps its canonical link when storage cannot write",
+);
+
 const indexHtml = fs.readFileSync(path.join(projectRoot, "index.html"), "utf8");
+check(/id="stateNavLink"[^>]*aria-current="page"/.test(indexHtml), "State nav has a live scenario link");
 check(/id="mapViewLabel"/.test(indexHtml), "map view label can be updated with the active mode");
 equal(
   Array.from(indexHtml.matchAll(/data-export-status-for="[^"]+"/g)).length,
@@ -68,6 +121,10 @@ check(
 check(
   /els\.wSlider\.step = String\(WEIGHT_URL_STEP\)/.test(stateScript),
   "State exact-weight entry retains six-decimal precision in the model source",
+);
+check(
+  /houseParams\.set\(\s*"stateScenario"/.test(stateScript),
+  "the House link carries a validated State return fallback",
 );
 
 const defaultCompilation = engine.compileSpecification(engine.defaultFormulas);
