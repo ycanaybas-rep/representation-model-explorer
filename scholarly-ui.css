@@ -1121,7 +1121,7 @@ body.paper-reader[data-paper-theme="night"] {
 .weight-direct-field {
   display: grid;
   min-width: 0;
-  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   align-items: center;
   min-height: 44px;
   overflow: hidden;
@@ -1142,18 +1142,11 @@ body.paper-reader[data-paper-theme="night"] {
   outline-color: #a83b35;
 }
 
-.weight-direct-field > span {
-  padding-left: 10px;
-  font-family: var(--font-mono, ui-monospace, monospace);
-  font-size: 0.75rem;
-  font-weight: 800;
-}
-
 .weight-direct-field input {
   width: 100%;
   min-width: 0;
   min-height: 44px;
-  padding: 7px 9px 7px 5px;
+  padding: 7px 10px;
   border: 0;
   outline: 0;
   color: var(--ink, #17231f);
