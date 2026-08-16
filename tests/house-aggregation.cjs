@@ -766,15 +766,15 @@ check(
   check(/alt=""/.test(image) && /aria-hidden="true"/.test(image), `${className} is decorative`);
 });
 check(
-  /src="assets\/house-hero-state-delegations-v1\.png\?/.test(houseHtml) &&
-    /Several hand-drawn state delegations combine into a semicircular House chamber\./.test(
+  /src="assets\/house-hero-state-delegations-slider-v2\.png\?/.test(houseHtml) &&
+    /Several hand-drawn state delegations feed into one shared weight slider and a semicircular House chamber\./.test(
       houseHtml,
     ),
-  "House hero uses its own delegation-to-chamber illustration and descriptive alt text",
+  "House hero uses its own delegation-to-slider-to-chamber illustration and descriptive alt text",
 );
 check(
-  fs.existsSync(path.join(projectRoot, "assets/house-hero-state-delegations-v1.png")),
-  "House-specific hero illustration is bundled",
+  fs.existsSync(path.join(projectRoot, "assets/house-hero-state-delegations-slider-v2.png")),
+  "House-specific slider hero illustration is bundled",
 );
 const houseIds = Array.from(houseHtml.matchAll(/\bid="([^"]+)"/g), (match) => match[1]);
 equal(new Set(houseIds).size, houseIds.length, "House page IDs are unique");
