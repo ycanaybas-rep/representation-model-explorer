@@ -92,6 +92,41 @@ equal(
   "w = 0.007530 · 0.753%",
   "House weight copy matches the State exact-plus-percent convention",
 );
+const desktopChartLayout = house.getHouseChartLayout(false);
+const compactChartLayout = house.getHouseChartLayout(true);
+deepEqual(
+  desktopChartLayout.xTicks,
+  [0, 0.25, 0.5, 0.75, 1],
+  "desktop House chart retains the detailed five-tick scale",
+);
+deepEqual(
+  compactChartLayout.xTicks,
+  [0, 0.5, 1],
+  "compact House chart exposes the entire weight range with three readable ticks",
+);
+equal(compactChartLayout.width, 360, "compact House chart uses a phone-specific viewBox");
+equal(compactChartLayout.yTickCount, 4, "compact House chart reduces vertical label density");
+check(!compactChartLayout.showEventPoints, "compact House chart removes overlapping event dots");
+approx(
+  house.getWeightFromChartPoint(
+    180,
+    { left: 0, width: 360 },
+    compactChartLayout,
+  ),
+  (180 - compactChartLayout.margin.left) /
+    (compactChartLayout.width - compactChartLayout.margin.left - compactChartLayout.margin.right),
+  "compact chart click mapping uses the displayed plot geometry",
+);
+equal(
+  house.getWeightFromChartPoint(0, { left: 0, width: 360 }, compactChartLayout),
+  0,
+  "compact chart clicks before the plot clamp to zero",
+);
+equal(
+  house.getWeightFromChartPoint(360, { left: 0, width: 360 }, compactChartLayout),
+  1,
+  "compact chart clicks after the plot clamp to one",
+);
 approx(model2024.demSupport + model2024.repSupport, 1, "2024 support shares sum to one");
 equal(
   house.distributeSeats(model2024.totalSeats).reduce((total, count) => total + count, 0),
@@ -841,11 +876,13 @@ check(
 });
 check(
   /class="house-chart-scroll"[\s\S]*?tabindex="0"[\s\S]*?role="region"/.test(houseHtml),
-  "House chart is a keyboard-focusable scroll region",
+  "House chart is a keyboard-focusable interactive region",
 );
 check(
-  /id="houseSeatShareChart"[\s\S]*?aria-labelledby="houseTrajectorySvgTitle"[\s\S]*?aria-describedby="houseTrajectoryDescription"/.test(houseHtml),
-  "House chart exposes its changing description without an overridden aria-label",
+  /id="houseSeatShareChart"[\s\S]*?preserveAspectRatio="xMidYMid meet"[\s\S]*?aria-labelledby="houseTrajectorySvgTitle"[\s\S]*?aria-describedby="houseTrajectoryDescription"/.test(
+    houseHtml,
+  ),
+  "House chart preserves its geometry and exposes its changing description",
 );
 check(
   /<header class="house-trajectory-heading">[\s\S]*?<span class="eyebrow">House across the weight range<\/span>[\s\S]*?<h2 id="houseTrajectoryTitle">See how the House changes<\/h2>[\s\S]*?<p class="house-trajectory-deck">[\s\S]*?<span class="house-trajectory-count">One chart<\/span>/.test(
@@ -869,8 +906,38 @@ check(
 );
 check(
   /\.house-trajectory-panel\s*\{[\s\S]*?background:\s*var\(--house-paper\)/.test(houseCss) &&
-    /\.house-chart-scroll\s*\{[\s\S]*?overflow-x:\s*auto/.test(houseCss),
-  "House trajectory chart remains a separate warm-paper, horizontally scrollable surface",
+    /\.house-chart-scroll\s*\{[\s\S]*?overflow-x:\s*auto/.test(houseCss) &&
+    /@media \(max-width:\s*620px\)[\s\S]*?\.house-chart-scroll\s*\{[\s\S]*?overflow-x:\s*hidden/.test(
+      houseCss,
+    ) &&
+    /@media \(max-width:\s*620px\)[\s\S]*?\.house-seat-share-chart\s*\{[\s\S]*?min-width:\s*0/.test(
+      houseCss,
+    ),
+  "House trajectory keeps desktop detail and fits the complete chart on phones",
+);
+check(
+  /HOUSE_CHART_LAYOUTS[\s\S]*?compact:[\s\S]*?width:\s*360[\s\S]*?xTicks:\s*Object\.freeze\(\[0, 0\.5, 1\]\)/.test(
+    houseJs,
+  ) &&
+    /matchMedia\("\(max-width: 620px\)"\)/.test(houseJs) &&
+    /getWeightFromChartPoint\([\s\S]*?activeChartLayout/.test(houseJs),
+  "House chart rendering and pointer mapping share the active compact geometry",
+);
+check(
+  /@media \(max-width:\s*620px\)[\s\S]*?\.house-chamber\s*\{[\s\S]*?aspect-ratio:\s*2\.3\s*\/\s*1/.test(
+    houseCss,
+  ),
+  "House chamber preserves its semicircular proportions on phones",
+);
+check(
+  /@media \(max-width:\s*500px\)[\s\S]*?\.house-vote-seat-band\s*\{[\s\S]*?grid-template-areas:[\s\S]*?"bar bar"[\s\S]*?"dem rep"/.test(
+    houseCss,
+  ),
+  "House vote band stacks before it can overflow a 430px phone",
+);
+check(
+  /Tap the line to choose a weight from 0 to 1\./.test(houseHtml),
+  "House mobile chart cue describes the fitted tap interaction",
 );
 check(
   !/houseCoverageHeadline|house-scope-card/.test(`${houseHtml}\n${houseJs}\n${houseCss}`),
