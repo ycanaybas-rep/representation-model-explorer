@@ -344,8 +344,18 @@ const stateProfileFieldsRule = baseRules.find((rule) =>
 check(Boolean(stateProfileFieldsRule), "State election fields must define compact geometry");
 check(
   hasDeclaration(stateProfileFieldsRule, "height", /^auto$/) &&
+    hasDeclaration(stateProfileFieldsRule, "grid-template-columns", /116px$/) &&
     hasDeclaration(stateProfileFieldsRule, "align-items", /^end$/),
-  "State election fields must stay compact while aligning buttons with the selector bottoms",
+  "State election fields must keep State and Year together in one compact row",
+);
+
+const stateProfileActionsRule = baseRules.find((rule) =>
+  containsBoth(rule, 'body[data-page="explorer"]', ".guided-profile-actions"),
+);
+check(Boolean(stateProfileActionsRule), "State election actions must define their own row");
+check(
+  hasDeclaration(stateProfileActionsRule, "grid-column", /^1\/-1$/),
+  "State election actions must sit below the State and Year selectors",
 );
 
 const yearSelectRule = baseRules.find((rule) =>
