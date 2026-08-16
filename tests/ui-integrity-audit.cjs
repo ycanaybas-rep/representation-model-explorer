@@ -33,6 +33,15 @@ check(
   "the state-year workspace heading is an h2",
 );
 check(!/guidedEntryTitle/.test(indexHtml), "the redundant hidden workspace heading is removed");
+check(
+  /src="assets\/representation-model-hero-two-party-slider-v2\.png\?/.test(indexHtml) &&
+    /district winners feed into one shared weight slider and emerge as/.test(indexHtml),
+  "State hero uses the shared-slider illustration and descriptive alt text",
+);
+check(
+  fs.existsSync(path.join(projectRoot, "assets/representation-model-hero-two-party-slider-v2.png")),
+  "State shared-slider hero illustration is bundled",
+);
 
 const chartFrames = Array.from(
   indexHtml.matchAll(/<div\b[^>]*class="[^"]*paper-figure-chart[^"]*"[^>]*>/g),
