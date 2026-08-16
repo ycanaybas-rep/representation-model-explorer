@@ -93,6 +93,7 @@ equal(
   "House weight copy matches the State exact-plus-percent convention",
 );
 const desktopChartLayout = house.getHouseChartLayout(false);
+const mediumChartLayout = house.getHouseChartLayout("medium");
 const compactChartLayout = house.getHouseChartLayout(true);
 deepEqual(
   desktopChartLayout.xTicks,
@@ -100,13 +101,23 @@ deepEqual(
   "desktop House chart retains the detailed five-tick scale",
 );
 deepEqual(
+  mediumChartLayout.xTicks,
+  [0, 0.25, 0.5, 0.75, 1],
+  "medium House chart retains the complete weight scale without horizontal cropping",
+);
+deepEqual(
   compactChartLayout.xTicks,
   [0, 0.5, 1],
   "compact House chart exposes the entire weight range with three readable ticks",
 );
 equal(compactChartLayout.width, 360, "compact House chart uses a phone-specific viewBox");
+equal(mediumChartLayout.width, 720, "medium House chart uses a landscape-specific viewBox");
 equal(compactChartLayout.yTickCount, 4, "compact House chart reduces vertical label density");
+check(compactChartLayout.margin.left >= 60, "compact House chart leaves room for percent labels");
 check(!compactChartLayout.showEventPoints, "compact House chart removes overlapping event dots");
+equal(house.getHouseChartMode(true, true), "compact", "compact chart mode wins below 620px");
+equal(house.getHouseChartMode(false, true), "medium", "medium chart mode covers narrow landscape widths");
+equal(house.getHouseChartMode(false, false), "desktop", "desktop chart mode remains the wide-screen default");
 approx(
   house.getWeightFromChartPoint(
     180,
@@ -875,8 +886,14 @@ check(
   check(!new RegExp(`id=["']${removedId}["']`).test(houseHtml), `House page removes #${removedId}`);
 });
 check(
-  /class="house-chart-scroll"[\s\S]*?tabindex="0"[\s\S]*?role="region"/.test(houseHtml),
-  "House chart is a keyboard-focusable interactive region",
+  /id="houseChartRegion"[\s\S]*?tabindex="0"[\s\S]*?role="region"[\s\S]*?aria-keyshortcuts="ArrowLeft ArrowRight ArrowUp ArrowDown PageUp PageDown Home End"/.test(
+    houseHtml,
+  ) &&
+    /houseChartRegion\.addEventListener\("keydown", handleChartKeyboard\)/.test(houseJs) &&
+    /function handleChartKeyboard\([\s\S]*?ArrowLeft:[\s\S]*?Home:\s*0,[\s\S]*?End:\s*1/.test(
+      houseJs,
+    ),
+  "House chart is keyboard operable with arrows, paging, Home, and End",
 );
 check(
   /id="houseSeatShareChart"[\s\S]*?preserveAspectRatio="xMidYMid meet"[\s\S]*?aria-labelledby="houseTrajectorySvgTitle"[\s\S]*?aria-describedby="houseTrajectoryDescription"/.test(
@@ -891,7 +908,7 @@ check(
   "House trajectory uses the same editorial chapter hierarchy as the State figures",
 );
 check(
-  /<div class="house-trajectory-panel">[\s\S]*?<p id="houseTrajectoryReading" class="house-trajectory-reading">[\s\S]*?<div\s+class="house-chart-scroll"[\s\S]*?id="houseSeatShareChart"[\s\S]*?id="houseChartScale"/.test(
+  /<div class="house-trajectory-panel">[\s\S]*?<p id="houseTrajectoryReading" class="house-trajectory-reading">[\s\S]*?<div\s+id="houseChartRegion"\s+class="house-chart-scroll"[\s\S]*?id="houseSeatShareChart"[\s\S]*?id="houseChartScale"/.test(
     houseHtml,
   ),
   "House trajectory keeps the live reading and interactive chart in a separate panel",
@@ -907,21 +924,22 @@ check(
 check(
   /\.house-trajectory-panel\s*\{[\s\S]*?background:\s*var\(--house-paper\)/.test(houseCss) &&
     /\.house-chart-scroll\s*\{[\s\S]*?overflow-x:\s*auto/.test(houseCss) &&
-    /@media \(max-width:\s*620px\)[\s\S]*?\.house-chart-scroll\s*\{[\s\S]*?overflow-x:\s*hidden/.test(
+    /@media \(max-width:\s*840px\)[\s\S]*?\.house-chart-scroll\s*\{[\s\S]*?overflow-x:\s*hidden/.test(
       houseCss,
     ) &&
-    /@media \(max-width:\s*620px\)[\s\S]*?\.house-seat-share-chart\s*\{[\s\S]*?min-width:\s*0/.test(
+    /@media \(max-width:\s*840px\)[\s\S]*?\.house-seat-share-chart\s*\{[\s\S]*?min-width:\s*0/.test(
       houseCss,
     ),
-  "House trajectory keeps desktop detail and fits the complete chart on phones",
+  "House trajectory keeps desktop detail and fits the complete chart on phones and narrow tablets",
 );
 check(
-  /HOUSE_CHART_LAYOUTS[\s\S]*?compact:[\s\S]*?width:\s*360[\s\S]*?xTicks:\s*Object\.freeze\(\[0, 0\.5, 1\]\)/.test(
+  /HOUSE_CHART_LAYOUTS[\s\S]*?medium:[\s\S]*?width:\s*720[\s\S]*?compact:[\s\S]*?width:\s*360[\s\S]*?xTicks:\s*Object\.freeze\(\[0, 0\.5, 1\]\)/.test(
     houseJs,
   ) &&
     /matchMedia\("\(max-width: 620px\)"\)/.test(houseJs) &&
+    /matchMedia\("\(max-width: 840px\)"\)/.test(houseJs) &&
     /getWeightFromChartPoint\([\s\S]*?activeChartLayout/.test(houseJs),
-  "House chart rendering and pointer mapping share the active compact geometry",
+  "House chart rendering and pointer mapping share the active responsive geometry",
 );
 check(
   /@media \(max-width:\s*620px\)[\s\S]*?\.house-chamber\s*\{[\s\S]*?aspect-ratio:\s*2\.3\s*\/\s*1/.test(
