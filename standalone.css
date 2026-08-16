@@ -375,6 +375,25 @@ body[data-page="house"] .house-hero-visual img {
   height: auto;
 }
 
+/* Keep the compact election picker intentional beside the taller weight panel. */
+body[data-page="explorer"] .guided-profile-panel {
+  align-content: start;
+}
+
+body[data-page="explorer"] .guided-profile-fields {
+  height: auto;
+  align-items: end;
+}
+
+body[data-page="explorer"] .year-control {
+  min-width: 116px;
+}
+
+body[data-page="explorer"] .year-control select {
+  width: 100%;
+  min-width: 116px;
+}
+
 body[data-page="house"]
   :is(.house-control-heading h2, .house-chamber-heading h2, .house-trajectory-heading h2) {
   font-family: var(--conference-serif);
@@ -506,6 +525,10 @@ body[data-page="house"]
   body[data-page="explorer"] #pageTitle .hero-line-statewide,
   body[data-page="house"] #housePageTitle .house-hero-line-house {
     font-size: min(0.57em, 7vw);
+  }
+
+  body[data-page="explorer"] .guided-profile-fields {
+    grid-template-columns: minmax(0, 1fr) 116px;
   }
 }
 
