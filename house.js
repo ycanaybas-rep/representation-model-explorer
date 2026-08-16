@@ -626,6 +626,7 @@
     if (!engine) throw new Error("The model engine did not load.");
 
     const ids = [
+      "stateNavLink",
       "houseYearSelect",
       "houseCoverageDetail",
       "houseWeight",
@@ -674,6 +675,13 @@
         return [id, element];
       }),
     );
+    const stateScenarioParameter = new URLSearchParams(window.location.search).get(
+      "stateScenario",
+    );
+    const stateReturnUrl =
+      engine.validateStateScenarioUrl?.(stateScenarioParameter) ||
+      engine.getRememberedStateScenarioUrl?.();
+    if (stateReturnUrl) elements.stateNavLink.href = stateReturnUrl;
 
     const years = getAvailableYears(engine);
     const initial = readInitialState(years);
