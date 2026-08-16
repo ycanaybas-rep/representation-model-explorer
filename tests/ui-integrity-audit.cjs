@@ -92,6 +92,25 @@ check(
   siteScript.includes("hero-annotations-ready") && siteScript.includes("hero-annotations-revealed"),
   "hero annotations reveal once the visitor begins scrolling",
 );
+check(
+  /class="advanced-toggle-copy"[\s\S]*?class="section-title-marked-words">model settings<\/span>[\s\S]*?class="section-title-underline"/.test(
+    indexHtml,
+  ),
+  "Advanced settings reuses the bundled hand-drawn title treatment",
+);
+check(
+  /\.advanced-toggle-copy > span\s*\{[\s\S]*?font-weight:\s*460/.test(standaloneStyles) &&
+    /\.advanced-toggle-summary > strong\s*\{[\s\S]*?font-weight:\s*600/.test(
+      standaloneStyles,
+    ),
+  "Advanced settings uses readable editorial text weights",
+);
+check(
+  /#paperFigures\.paper-figures-chapter\s*\{[\s\S]*?padding-top:[\s\S]*?border-top:\s*1px solid var\(--conference-line-strong\)/.test(
+    standaloneStyles,
+  ),
+  "Advanced settings and model geometry have a visible chapter separator",
+);
 const exportTargets = Array.from(
   indexHtml.matchAll(/data-export-status-for="([^"]+)"/g),
   (match) => match[1],
