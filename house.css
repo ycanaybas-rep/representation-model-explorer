@@ -1191,6 +1191,32 @@ body[data-page="house"].hero-annotations-ready.hero-annotations-revealed
   }
 }
 
+@media (max-width: 840px) {
+  .house-chart-cue {
+    display: block;
+    font-size: 0.78rem;
+    text-align: left;
+  }
+
+  .house-chart-scroll {
+    overflow-x: hidden;
+  }
+
+  .house-seat-share-chart {
+    width: 100%;
+    min-width: 0;
+    touch-action: manipulation;
+  }
+
+  .house-chart-y-title-compact {
+    text-anchor: start;
+  }
+
+  .house-chart-scale-note {
+    font-size: 0.78rem;
+  }
+}
+
 @media (max-width: 720px) {
   body[data-page="house"] .site-header .header-inner {
     width: min(100% - 24px, 1400px);
@@ -1366,29 +1392,6 @@ body[data-page="house"].hero-annotations-ready.hero-annotations-revealed
     min-height: 0;
   }
 
-  .house-chart-cue {
-    display: block;
-    font-size: 0.78rem;
-    text-align: left;
-  }
-
-  .house-chart-scroll {
-    overflow-x: hidden;
-  }
-
-  .house-seat-share-chart {
-    width: 100%;
-    min-width: 0;
-    touch-action: manipulation;
-  }
-
-  .house-chart-y-title-compact {
-    text-anchor: start;
-  }
-
-  .house-chart-scale-note {
-    font-size: 0.78rem;
-  }
 }
 
 @media (max-width: 500px) {

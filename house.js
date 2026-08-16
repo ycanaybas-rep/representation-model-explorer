@@ -34,11 +34,21 @@
       showEventPoints: true,
       majorityLabel: "218-seat majority",
     }),
+    medium: Object.freeze({
+      mode: "medium",
+      width: 720,
+      height: 360,
+      margin: Object.freeze({ top: 30, right: 24, bottom: 58, left: 76 }),
+      xTicks: Object.freeze([0, 0.25, 0.5, 0.75, 1]),
+      yTickCount: 4,
+      showEventPoints: false,
+      majorityLabel: "218-seat majority",
+    }),
     compact: Object.freeze({
       mode: "compact",
       width: 360,
       height: 300,
-      margin: Object.freeze({ top: 38, right: 14, bottom: 56, left: 54 }),
+      margin: Object.freeze({ top: 38, right: 14, bottom: 56, left: 62 }),
       xTicks: Object.freeze([0, 0.5, 1]),
       yTickCount: 4,
       showEventPoints: false,
@@ -46,8 +56,16 @@
     }),
   });
 
-  function getHouseChartLayout(compact = false) {
-    return compact ? HOUSE_CHART_LAYOUTS.compact : HOUSE_CHART_LAYOUTS.desktop;
+  function getHouseChartLayout(mode = false) {
+    if (mode === true || mode === "compact") return HOUSE_CHART_LAYOUTS.compact;
+    if (mode === "medium") return HOUSE_CHART_LAYOUTS.medium;
+    return HOUSE_CHART_LAYOUTS.desktop;
+  }
+
+  function getHouseChartMode(isCompact, isMedium) {
+    if (isCompact) return "compact";
+    if (isMedium) return "medium";
+    return "desktop";
   }
 
   function getWeightFromChartPoint(clientX, bounds, layout) {
@@ -639,6 +657,7 @@
       "houseDemocraticSwitches",
       "houseRepublicanSwitches",
       "houseDistrictsChangedNote",
+      "houseChartRegion",
       "houseSeatShareChart",
       "houseTrajectoryDescription",
       "houseTrajectoryReading",
@@ -659,7 +678,11 @@
     let activeSeatShareSeries = null;
     let activeChartDomain = null;
     const compactChartQuery = window.matchMedia("(max-width: 620px)");
-    let activeChartLayout = getHouseChartLayout(compactChartQuery.matches);
+    const mediumChartQuery = window.matchMedia("(max-width: 840px)");
+    const getActiveChartLayout = () => getHouseChartLayout(
+      getHouseChartMode(compactChartQuery.matches, mediumChartQuery.matches),
+    );
+    let activeChartLayout = getActiveChartLayout();
     let chamberSeats = [];
     let renderFrame = 0;
     let lastCompositionKey = "";
@@ -696,17 +719,20 @@
       moveToComposition(1);
     });
     elements.houseSeatShareChart.addEventListener("click", handleChartClick);
+    elements.houseChartRegion.addEventListener("keydown", handleChartKeyboard);
     const handleChartLayoutChange = () => {
-      activeChartLayout = getHouseChartLayout(compactChartQuery.matches);
+      activeChartLayout = getActiveChartLayout();
       if (!activeSeatShareSeries || !activeChartDomain) return;
       renderSeatShareChart(activeSeatShareSeries, activeChartDomain);
       if (activeSnapshot) updateCurrentChartMarker(activeSnapshot);
     };
-    if (typeof compactChartQuery.addEventListener === "function") {
-      compactChartQuery.addEventListener("change", handleChartLayoutChange);
-    } else if (typeof compactChartQuery.addListener === "function") {
-      compactChartQuery.addListener(handleChartLayoutChange);
-    }
+    [compactChartQuery, mediumChartQuery].forEach((query) => {
+      if (typeof query.addEventListener === "function") {
+        query.addEventListener("change", handleChartLayoutChange);
+      } else if (typeof query.addListener === "function") {
+        query.addListener(handleChartLayoutChange);
+      }
+    });
 
     loadYear(initial.year);
 
@@ -823,7 +849,7 @@
 
     function renderSeatShareChart(series, domain) {
       const svg = elements.houseSeatShareChart;
-      activeChartLayout = getHouseChartLayout(compactChartQuery.matches);
+      activeChartLayout = getActiveChartLayout();
       const {
         width,
         height,
@@ -844,7 +870,7 @@
       title.textContent = "Democratic share of all 435 House seats by statewide weight";
       const description = elements.houseTrajectoryDescription;
       const rangeText = `${formatPercent(series.minDemSeatShare, 1)} to ${formatPercent(series.maxDemSeatShare, 1)}`;
-      description.textContent = `Focused vertical scale. The step line shows the Democratic share of all 435 House seats as w changes from zero to one. Outside-panel assignments remain fixed. There are ${series.events.length} switching points and the share ranges from ${rangeText}.`;
+      description.textContent = `Focused vertical scale. The step line shows the Democratic share of all 435 House seats as w changes from zero to one. Outside-panel assignments remain fixed. There are ${series.events.length} switching points and the share ranges from ${rangeText}. Use the arrow keys to change w, Home for zero, or End for one.`;
       elements.houseChartScale.textContent = `Focused vertical scale: ${formatPercent(domain.min, 1)}–${formatPercent(domain.max, 1)}.`;
 
       const grid = createSvgElement("g", { class: "house-chart-grid" });
@@ -1003,8 +1029,27 @@
       point?.setAttribute("cy", String(y));
       const formattedWeight = formatWeightWithPercent(snapshot.weight, engine);
       elements.houseTrajectoryReading.textContent = `At ${formattedWeight}, Democrats hold ${snapshot.fullDemSeats} of 435 seats (${formatPercent(snapshot.fullDemSeatShare, 1)}).`;
-      elements.houseTrajectoryDescription.textContent = `The step line shows the Democratic share of all 435 House seats as w changes from zero to one. At ${formattedWeight}, Democrats hold ${snapshot.fullDemSeats} seats, or ${formatPercent(snapshot.fullDemSeatShare, 1)}. Outside-panel assignments remain fixed. The focused vertical scale runs from ${formatPercent(activeChartDomain.min, 1)} to ${formatPercent(activeChartDomain.max, 1)}.`;
+      elements.houseTrajectoryDescription.textContent = `The step line shows the Democratic share of all 435 House seats as w changes from zero to one. At ${formattedWeight}, Democrats hold ${snapshot.fullDemSeats} seats, or ${formatPercent(snapshot.fullDemSeatShare, 1)}. Outside-panel assignments remain fixed. The focused vertical scale runs from ${formatPercent(activeChartDomain.min, 1)} to ${formatPercent(activeChartDomain.max, 1)}. Use the arrow keys to change w, Home for zero, or End for one.`;
       elements.houseSeatShareChart.removeAttribute("aria-label");
+    }
+
+    function handleChartKeyboard(event) {
+      const currentWeight = clampWeight(elements.houseWeight.value);
+      const step = event.shiftKey ? 0.05 : 0.01;
+      const nextByKey = {
+        ArrowLeft: currentWeight - step,
+        ArrowDown: currentWeight - step,
+        ArrowRight: currentWeight + step,
+        ArrowUp: currentWeight + step,
+        PageDown: currentWeight - 0.1,
+        PageUp: currentWeight + 0.1,
+        Home: 0,
+        End: 1,
+      };
+      if (!(event.key in nextByKey)) return;
+      event.preventDefault();
+      elements.houseWeight.value = String(clampWeight(nextByKey[event.key]));
+      renderCurrentWeight(true);
     }
 
     function handleChartClick(event) {
@@ -1167,6 +1212,7 @@
     SWITCH_TOLERANCE,
     clampWeight,
     getHouseChartLayout,
+    getHouseChartMode,
     getWeightFromChartPoint,
     getAvailableYears,
     buildYearModel,
