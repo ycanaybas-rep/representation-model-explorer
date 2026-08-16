@@ -31,9 +31,9 @@
     <link rel="stylesheet" href="district-maps.css?v=20260720c" />
     <link rel="stylesheet" href="scholarly-ui.css?v=20260728surface1" />
     <link rel="stylesheet" href="model-workspace.css?v=20260814polish1" />
-    <link rel="stylesheet" href="model-editorial-system.css?v=20260814authors1" />
+    <link rel="stylesheet" href="model-editorial-system.css?v=20260816visual1" />
     <link rel="stylesheet" href="final-quality-control.css?v=20260814polish1" />
-    <link rel="stylesheet" href="standalone.css?v=20260814notes1" />
+    <link rel="stylesheet" href="standalone.css?v=20260816visual1" />
   </head>
   <body data-page="explorer">
     <a class="skip-link" href="#mainContent">Skip to model</a>
@@ -447,6 +447,29 @@
           >
             Scroll to inspect every district <span aria-hidden="true">→</span>
           </button>
+
+          <section
+            id="mobileDistrictOverview"
+            class="mobile-district-overview"
+            aria-label="District allocation overview"
+          >
+            <div class="mobile-district-overview-heading">
+              <span class="eyebrow">Mobile allocation view</span>
+              <p id="mobileMapSummary">District assignments will appear after the election loads.</p>
+            </div>
+            <div
+              id="mobileDistrictGrid"
+              class="mobile-district-grid"
+              role="list"
+              aria-label="District assignments"
+            ></div>
+            <p class="mobile-district-instruction">
+              Tap a district for its vote share, local winner, and model result.
+            </p>
+            <p id="mobileDistrictDetail" class="mobile-district-detail" aria-live="polite">
+              Choose a district to see its details.
+            </p>
+          </section>
 
           <div class="map-target-banner" aria-live="polite">
             <span>Statewide target</span>
@@ -1596,6 +1619,6 @@
     <script src="vendor/katex/katex.min.js" defer></script>
     <script src="site.js?v=20260814polish1" defer></script>
     <script src="election-data.js?v=20260804dataset1" defer></script>
-    <script src="script.js?v=20260814notes1" defer></script>
+    <script src="script.js?v=20260816visual1" defer></script>
   </body>
 </html>

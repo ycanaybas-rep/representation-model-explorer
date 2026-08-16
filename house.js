@@ -372,6 +372,35 @@
     return "fixed-rep";
   }
 
+  function getChamberSwitchIndexes(
+    categories,
+    democraticSwitches,
+    republicanSwitches,
+  ) {
+    const modeledDemocratic = [];
+    const modeledRepublican = [];
+    categories.forEach((category, index) => {
+      if (category === "modeled-dem") modeledDemocratic.push(index);
+      if (category === "modeled-rep") modeledRepublican.push(index);
+    });
+    const toDemocraticCount = Math.max(0, Number(democraticSwitches) || 0);
+    const toRepublicanCount = Math.max(0, Number(republicanSwitches) || 0);
+    if (
+      toDemocraticCount > modeledDemocratic.length ||
+      toRepublicanCount > modeledRepublican.length
+    ) {
+      throw new RangeError("Changed-district counts exceed the modeled House seats.");
+    }
+    return {
+      toDemocratic: toDemocraticCount
+        ? modeledDemocratic.slice(-toDemocraticCount)
+        : [],
+      toRepublican: toRepublicanCount
+        ? modeledRepublican.slice(0, toRepublicanCount)
+        : [],
+    };
+  }
+
   function buildHouseSeatShareSeries(yearModel) {
     const eventGroups = yearModel.switchGroups.filter(
       (group) => Number.isFinite(group.weight) && group.weight > 0 && group.weight < 1,
@@ -929,7 +958,7 @@
       const weight = clampWeight(elements.houseWeight.value);
       elements.houseWeight.value = String(weight);
       activeSnapshot = computeHouseSnapshot(activeYearModel, weight);
-      const compositionKey = `${activeSnapshot.fullDemSeats}-${activeSnapshot.fullRepSeats}-${activeSnapshot.fullOtherSeats}-${activeSnapshot.stateResults
+      const compositionKey = `${activeSnapshot.fullDemSeats}-${activeSnapshot.fullRepSeats}-${activeSnapshot.fullOtherSeats}-${activeSnapshot.flips}-${activeSnapshot.democraticSwitches}-${activeSnapshot.republicanSwitches}-${activeSnapshot.stateResults
         .map((state) => state.demSeats)
         .join("-")}`;
 
@@ -993,10 +1022,22 @@
       );
       elements.houseChamberSeats.setAttribute(
         "aria-label",
-        `${snapshot.fullDemSeats} Democratic, ${snapshot.fullRepSeats} Republican, and ${snapshot.fullOtherSeats} Independent seats across all 435 House positions. The modeled panel contains ${snapshot.demSeats} Democratic and ${snapshot.repSeats} Republican seats. Fixed outside-panel assignments contain ${activeYearModel.outsideDemSeats} Democratic, ${activeYearModel.outsideRepSeats} Republican, and ${activeYearModel.outsideOtherSeats} Independent seats. Seats are arranged for composition only, not member seating or geography.`,
+        `${snapshot.fullDemSeats} Democratic, ${snapshot.fullRepSeats} Republican, and ${snapshot.fullOtherSeats} Independent seats across all 435 House positions. The modeled panel contains ${snapshot.demSeats} Democratic and ${snapshot.repSeats} Republican seats. Fixed outside-panel assignments contain ${activeYearModel.outsideDemSeats} Democratic, ${activeYearModel.outsideRepSeats} Republican, and ${activeYearModel.outsideOtherSeats} Independent seats. Dark-and-gold rings mark ${snapshot.democraticSwitches} seats changed from a Republican local winner to Democratic and ${snapshot.republicanSwitches} changed from a Democratic local winner to Republican. Seats are arranged for composition only, not member seating or geography.`,
       );
+      const chamberCategories = chamberSeats.map((seat, index) =>
+        getChamberSeatCategory(index, snapshot, activeYearModel),
+      );
+      const switchIndexes = getChamberSwitchIndexes(
+        chamberCategories,
+        snapshot.democraticSwitches,
+        snapshot.republicanSwitches,
+      );
+      const switchedToDemocratic = new Set(switchIndexes.toDemocratic);
+      const switchedToRepublican = new Set(switchIndexes.toRepublican);
       chamberSeats.forEach((seat, index) => {
-        const category = getChamberSeatCategory(index, snapshot, activeYearModel);
+        const category = chamberCategories[index];
+        const switchedToDem = switchedToDemocratic.has(index);
+        const switchedToRep = switchedToRepublican.has(index);
         seat.dataset.seatCategory = category;
         seat.classList.toggle(
           "is-dem",
@@ -1009,6 +1050,9 @@
         seat.classList.toggle("is-other", category === "fixed-other");
         seat.classList.toggle("is-fixed-dem", category === "fixed-dem");
         seat.classList.toggle("is-fixed-rep", category === "fixed-rep");
+        seat.classList.toggle("is-switched", switchedToDem || switchedToRep);
+        seat.classList.toggle("is-switched-to-dem", switchedToDem);
+        seat.classList.toggle("is-switched-to-rep", switchedToRep);
       });
 
       elements.houseDistrictsChanged.textContent = String(snapshot.flips);
@@ -1063,6 +1107,7 @@
     distributeSeats,
     buildChamberSeatLayout,
     getChamberSeatCategory,
+    getChamberSwitchIndexes,
     buildHouseSeatShareSeries,
     getSeatShareChartDomain,
     getAdjacentCompositionWeight,

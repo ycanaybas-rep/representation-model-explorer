@@ -3,6 +3,12 @@
   grid-template-columns: auto minmax(0, 1fr) auto;
 }
 
+/* One shared page frame keeps State, House, header, and footer aligned. */
+:is(body[data-page="explorer"], body[data-page="house"])
+  :is(.site-header .header-inner, .app-shell, .house-main, .footer-inner) {
+  width: min(1400px, calc(100% - 48px));
+}
+
 .main-site-link {
   display: inline-flex;
   min-height: 40px;
@@ -62,6 +68,13 @@
     min-height: 44px;
     grid-column: 2;
     grid-row: 2;
+  }
+}
+
+@media (max-width: 720px) {
+  :is(body[data-page="explorer"], body[data-page="house"])
+    :is(.site-header .header-inner, .app-shell, .house-main, .footer-inner) {
+    width: min(1400px, calc(100% - 24px));
   }
 }
 

@@ -21,16 +21,16 @@
     <meta property="og:url" content="https://representation.yunusaybas.com/house.html" />
     <meta
       property="og:image"
-      content="https://representation.yunusaybas.com/assets/representation-model-hero-two-party.png"
+      content="https://representation.yunusaybas.com/assets/house-hero-state-delegations-v1.png"
     />
     <link rel="icon" type="image/png" sizes="64x64" href="favicon-two-party-v2.png?v=20260728brand2" />
     <link rel="icon" type="image/x-icon" sizes="any" href="favicon-two-party-v2.ico?v=20260728brand2" />
     <link rel="apple-touch-icon" href="apple-touch-icon-two-party-v2.png?v=20260728brand2" />
     <link rel="stylesheet" href="styles.css?v=20260814authors1" />
     <link rel="stylesheet" href="scholarly-ui.css?v=20260728surface1" />
-    <link rel="stylesheet" href="house.css?v=20260814switches1" />
+    <link rel="stylesheet" href="house.css?v=20260816visual1" />
     <link rel="stylesheet" href="final-quality-control.css?v=20260814polish1" />
-    <link rel="stylesheet" href="standalone.css?v=20260814notes1" />
+    <link rel="stylesheet" href="standalone.css?v=20260816visual1" />
   </head>
   <body data-page="house">
     <a class="skip-link" href="#mainContent">Skip to House Explorer</a>
@@ -109,10 +109,10 @@
         </div>
         <figure class="house-hero-visual">
           <img
-            src="assets/representation-model-hero-two-party.png?v=20260728twoparty1"
+            src="assets/house-hero-state-delegations-v1.png?v=20260816househero1"
             width="1100"
             height="1100"
-            alt="A hand-drawn diagram of Democratic and Republican district results flowing through a weighted rule into a delegation."
+            alt="Several hand-drawn state delegations combine into a semicircular House chamber."
             decoding="async"
             fetchpriority="high"
           />
@@ -216,9 +216,10 @@
             <span><i class="is-dem is-fixed-dem" aria-hidden="true"></i>Fixed Democratic</span>
             <span><i class="is-rep" aria-hidden="true"></i>Modeled Republican</span>
             <span><i class="is-rep is-fixed-rep" aria-hidden="true"></i>Fixed Republican</span>
+            <span><i class="is-switched" aria-hidden="true"></i>Changed from local winner</span>
             <span id="houseOtherLegend" hidden><i class="is-other" aria-hidden="true"></i>Fixed Independent</span>
           </div>
-          <p class="house-chamber-note">All 435 seats are assigned. Lighter, outlined Democratic and Republican seats are fixed outside the panel; solid seats follow the model. Positions show composition, not member seating or geography.</p>
+          <p class="house-chamber-note">All 435 seats are assigned. Lighter party colors mark fixed seats outside the panel; dark-and-gold rings mark modeled seats assigned against their local winner. Positions show composition, not member seating or geography.</p>
 
           <div class="house-vote-seat-band">
             <div class="house-vote-share is-dem">
@@ -357,7 +358,7 @@
 
     <script src="site.js?v=20260814hero1" defer></script>
     <script src="election-data.js?v=20260804dataset1" defer></script>
-    <script src="script.js?v=20260814notes1" defer></script>
-    <script src="house.js?v=20260814switches1" defer></script>
+    <script src="script.js?v=20260816visual1" defer></script>
+    <script src="house.js?v=20260816visual1" defer></script>
   </body>
 </html>

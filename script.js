@@ -998,6 +998,10 @@ function cacheElements() {
     "modelMapModeLabel",
     "mapWrap",
     "mapPanCue",
+    "mobileDistrictOverview",
+    "mobileMapSummary",
+    "mobileDistrictGrid",
+    "mobileDistrictDetail",
     "mapShapes",
     "districtTooltip",
     "demVoteLabel",
@@ -6244,7 +6248,7 @@ function getProfileDistrictFocus(mode, district, metrics) {
   return null;
 }
 
-function renderMapLegend(mode) {
+function renderMapLegend(mode, districts = [], assignment = []) {
   const profileMode = isProfileDiagnosticMode(mode);
   els.mapLegendDem.lastChild.textContent = profileMode
     ? " Democratic plurality"
@@ -6254,6 +6258,18 @@ function renderMapLegend(mode) {
     : " Republican allocation";
   const focusSwatch = els.mapLegendFocus.querySelector("i");
   focusSwatch.className = `legend-swatch ${profileMode ? "profile" : "flip"}`;
+  const directionalChanges = districts.reduce(
+    (counts, district, index) => {
+      if (profileMode || mode === "observed") return counts;
+      const assignedParty = assignment[index] ? "D" : "R";
+      if (district.winner === "R" && assignedParty === "D") counts.toDemocratic += 1;
+      if (district.winner === "D" && assignedParty === "R") counts.toRepublican += 1;
+      return counts;
+    },
+    { toDemocratic: 0, toRepublican: 0 },
+  );
+  const changedCount =
+    directionalChanges.toDemocratic + directionalChanges.toRepublican;
   els.mapLegendFocus.lastChild.textContent =
     mode === "competitive"
       ? " Highlighted: within 10 points"
@@ -6261,7 +6277,132 @@ function renderMapLegend(mode) {
         ? " Highlighted: pivotal under 45%-55% swing"
         : mode === "meanMedian"
           ? " Color intensity follows district vote share"
-          : " Reverses local plurality";
+          : changedCount
+            ? ` Gold + dark frame: ${changedCount} changed (${directionalChanges.toDemocratic} R→D · ${directionalChanges.toRepublican} D→R)`
+            : " Gold + dark frame: differs from local winner";
+}
+
+function renderMobileDistrictOverview(
+  districts,
+  assignment,
+  diagnosticMode,
+  assignmentLabel,
+) {
+  const profileMode = isProfileDiagnosticMode(diagnosticMode);
+  const priorSelectedId = els.mobileDistrictGrid.querySelector(
+    '.mobile-district-chip[aria-pressed="true"]',
+  )?.dataset.districtId;
+  const entries = districts.map((district, index) => {
+    const assignedParty = assignment[index] ? "D" : "R";
+    const isSwitched =
+      !profileMode && diagnosticMode !== "observed" && assignedParty !== district.winner;
+    return { district, assignedParty, isSwitched };
+  });
+  const democraticSeats = entries.filter((entry) => entry.assignedParty === "D").length;
+  const toDemocratic = entries.filter(
+    (entry) => entry.isSwitched && entry.assignedParty === "D",
+  ).length;
+  const toRepublican = entries.filter(
+    (entry) => entry.isSwitched && entry.assignedParty === "R",
+  ).length;
+  const changedCount = toDemocratic + toRepublican;
+  els.mobileMapSummary.textContent = changedCount
+    ? `${entries.length} districts · ${democraticSeats} D / ${entries.length - democraticSeats} R · ${changedCount} changed (${toDemocratic} R→D, ${toRepublican} D→R).`
+    : `${entries.length} districts · ${democraticSeats} D / ${entries.length - democraticSeats} R · no assignments differ from local plurality.`;
+
+  const selectedId = entries.some(
+    (entry) => String(entry.district.id) === priorSelectedId,
+  )
+    ? priorSelectedId
+    : String(entries.find((entry) => entry.isSwitched)?.district.id ?? entries[0]?.district.id ?? "");
+
+  const describeEntry = ({ district, assignedParty, isSwitched }) => {
+    const assignedPartyName = assignedParty === "D" ? "Democratic" : "Republican";
+    const localPartyName = district.winner === "D" ? "Democratic" : "Republican";
+    const localResult = isExactDistrictTie(district)
+      ? `${localPartyName} under the displayed tie rule`
+      : `${localPartyName} by ${formatDistrictWinningMargin(district.margin)}`;
+    const switchReading = isSwitched
+      ? `Changed ${district.winner}→${assignedParty}.`
+      : "Matches the local winner.";
+    return `District ${district.id} · Democratic vote ${formatPercent(
+      district.demShare,
+      1,
+    )}. Local winner: ${localResult}. ${assignmentLabel}: ${assignedPartyName}. ${switchReading}`;
+  };
+
+  const selectDistrict = (button, moveFocus = false) => {
+    const buttons = Array.from(
+      els.mobileDistrictGrid.querySelectorAll(".mobile-district-chip"),
+    );
+    buttons.forEach((candidate) => {
+      const selected = candidate === button;
+      candidate.setAttribute("aria-pressed", String(selected));
+      candidate.tabIndex = selected ? 0 : -1;
+    });
+    els.mobileDistrictDetail.textContent = button.dataset.detail;
+    if (moveFocus) button.focus({ preventScroll: true });
+  };
+
+  const items = entries.map((entry) => {
+    const item = document.createElement("div");
+    item.className = "mobile-district-item";
+    item.setAttribute("role", "listitem");
+    const button = document.createElement("button");
+    const districtId = String(entry.district.id);
+    const detail = describeEntry(entry);
+    button.type = "button";
+    button.className = [
+      "mobile-district-chip",
+      `assigned-${entry.assignedParty.toLowerCase()}`,
+      entry.isSwitched ? "is-switched" : "",
+    ].filter(Boolean).join(" ");
+    button.dataset.districtId = districtId;
+    button.dataset.detail = detail;
+    button.setAttribute("aria-label", detail);
+    button.setAttribute("aria-pressed", String(districtId === selectedId));
+    button.tabIndex = districtId === selectedId ? 0 : -1;
+    const number = document.createElement("span");
+    number.textContent = `#${districtId}`;
+    const party = document.createElement("strong");
+    party.textContent = entry.assignedParty;
+    button.append(number, party);
+    button.addEventListener("click", () => selectDistrict(button));
+    button.addEventListener("focus", () => selectDistrict(button));
+    button.addEventListener("keydown", (event) => {
+      const navigationKeys = [
+        "ArrowLeft",
+        "ArrowRight",
+        "ArrowUp",
+        "ArrowDown",
+        "Home",
+        "End",
+      ];
+      if (!navigationKeys.includes(event.key)) return;
+      const buttons = Array.from(
+        els.mobileDistrictGrid.querySelectorAll(".mobile-district-chip"),
+      );
+      const currentIndex = buttons.indexOf(button);
+      let nextIndex = currentIndex;
+      if (event.key === "Home") nextIndex = 0;
+      else if (event.key === "End") nextIndex = buttons.length - 1;
+      else if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
+        nextIndex = (currentIndex - 1 + buttons.length) % buttons.length;
+      } else {
+        nextIndex = (currentIndex + 1) % buttons.length;
+      }
+      event.preventDefault();
+      selectDistrict(buttons[nextIndex], true);
+    });
+    item.append(button);
+    return item;
+  });
+  els.mobileDistrictGrid.replaceChildren(...items);
+  const selectedButton = els.mobileDistrictGrid.querySelector(
+    '.mobile-district-chip[aria-pressed="true"]',
+  );
+  els.mobileDistrictDetail.textContent = selectedButton?.dataset.detail ||
+    "Choose a district to see its details.";
 }
 
 function syncMapPanCue() {
@@ -6523,7 +6664,13 @@ function renderMap(districts, metrics, outcome, diagnosticMode, comparison, w) {
   els.mapSeatBadge.textContent = mapPresentation.seatBadge;
   els.mapFlipCount.textContent = mapPresentation.status;
   els.mapPredictionTakeaway.textContent = mapPresentation.takeaway;
-  renderMapLegend(diagnosticMode);
+  renderMapLegend(diagnosticMode, districts, assignment);
+  renderMobileDistrictOverview(
+    districts,
+    assignment,
+    diagnosticMode,
+    assignmentLabel,
+  );
   const priorDistrictShapes = Array.from(
     els.mapShapes.querySelectorAll(".district-shape"),
   );
@@ -6635,6 +6782,17 @@ function renderMap(districts, metrics, outcome, diagnosticMode, comparison, w) {
         makeSvgElement("polygon", {
           points: polygonPoints,
           class: [
+            "district-switch-rigid-keyline",
+            dense ? "is-dense" : "",
+            isEntering ? "is-entering" : "",
+          ].filter(Boolean).join(" "),
+          "data-district-id": districtId,
+          "aria-hidden": "true",
+          focusable: "false",
+        }),
+        makeSvgElement("polygon", {
+          points: polygonPoints,
+          class: [
             "district-switch-rigid-outline",
             dense ? "is-dense" : "",
             isEntering ? "is-entering" : "",
@@ -6653,8 +6811,8 @@ function renderMap(districts, metrics, outcome, diagnosticMode, comparison, w) {
       );
     }
 
-    // Paint the interactive district above the switch frame so the paper moat,
-    // party border, and fill remain crisp inside the gold perimeter.
+    // Paint the interactive district above the dark, gold, and paper switch frame
+    // so the party border and fill remain crisp inside the perimeter.
     els.mapShapes.append(polygon);
 
     const labelClipId = `explorer-district-label-${index}`;
@@ -6753,7 +6911,7 @@ function renderMap(districts, metrics, outcome, diagnosticMode, comparison, w) {
         textLine(
           "district-model-footer-kicker",
           footerY + 10,
-          seatRoleLabel,
+          isFlipped ? "Switched to" : seatRoleLabel,
         ),
         textLine(
           "district-model-footer-party",
@@ -6785,7 +6943,7 @@ function renderMap(districts, metrics, outcome, diagnosticMode, comparison, w) {
         textLine(
           "district-model-footer-kicker compact",
           footerY + 8,
-          seatRoleLabel,
+          isFlipped ? "Switched to" : seatRoleLabel,
         ),
         textLine(
           "district-model-footer-party compact",
