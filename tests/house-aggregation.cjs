@@ -750,6 +750,7 @@ const scholarlyCss = fs.readFileSync(path.join(projectRoot, "scholarly-ui.css"),
 const houseJs = fs.readFileSync(path.join(projectRoot, "house.js"), "utf8");
 const siteJs = fs.readFileSync(path.join(projectRoot, "site.js"), "utf8");
 const requiredHouseIds = [
+  "stateNavLink",
   "housePageTitle",
   "houseHeroQuestion",
   "houseControls",
@@ -917,6 +918,12 @@ check(
       houseJs,
     ),
   "House manual entry reuses State validation and stays synchronized with every weight path",
+);
+check(
+  /validateStateScenarioUrl\?\.\(stateScenarioParameter\)/.test(houseJs) &&
+    /getRememberedStateScenarioUrl\?\.\(\)/.test(houseJs) &&
+    /elements\.stateNavLink\.href = stateReturnUrl/.test(houseJs),
+  "House State tab restores the visitor's last complete State scenario",
 );
 check(
   /\.weight-direct-entry\s*\{[\s\S]*?grid-template-columns:[\s\S]*?\.weight-direct-entry \.button-secondary\s*\{[\s\S]*?min-height:\s*44px/.test(
