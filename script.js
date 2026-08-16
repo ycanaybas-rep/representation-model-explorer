@@ -30,6 +30,7 @@ const stateConfigs = Object.fromEntries(
 const CUSTOM_STATE_KEY = "__custom_state__";
 const CUSTOM_YEAR_LABEL = "Entered votes";
 const CUSTOM_STATE_STORAGE_KEY = "misrepresentationCustomStateV1";
+const LAST_STATE_SCENARIO_STORAGE_KEY = "districtsToDelegationsLastStateScenarioV1";
 const CUSTOM_DISTRICT_MIN = 3;
 const CUSTOM_DISTRICT_MAX = 18;
 const MAX_FORMULA_SOURCE_LENGTH = 256;
@@ -845,6 +846,76 @@ function parseScenarioUrl(urlLike) {
   }
 }
 
+function normalizeStatePageUrl(value, baseHref = null) {
+  if (!value) return null;
+  const fallbackBase = "https://example.invalid/house.html";
+  const reference =
+    baseHref || (typeof window !== "undefined" ? window.location.href : fallbackBase);
+  try {
+    const base = new URL(reference, fallbackBase);
+    const stateDirectory = new URL("./", base);
+    const candidate = new URL(String(value), stateDirectory);
+    const indexPath = `${stateDirectory.pathname}index.html`;
+    if (
+      candidate.origin !== stateDirectory.origin ||
+      candidate.username ||
+      candidate.password ||
+      (candidate.pathname !== stateDirectory.pathname && candidate.pathname !== indexPath)
+    ) {
+      return null;
+    }
+    return candidate.href;
+  } catch {
+    return null;
+  }
+}
+
+function validateStateScenarioUrl(value, baseHref = null) {
+  const normalized = normalizeStatePageUrl(value, baseHref);
+  if (!normalized) return null;
+  const restored = parseScenarioUrl(normalized);
+  return restored.found && !restored.embed ? normalized : null;
+}
+
+function getRememberedStateScenarioUrl(storage = undefined, baseHref = null) {
+  let targetStorage = storage;
+  if (targetStorage === undefined) {
+    try {
+      targetStorage = typeof window !== "undefined" ? window.sessionStorage : null;
+    } catch {
+      targetStorage = null;
+    }
+  }
+  if (!targetStorage?.getItem) return null;
+  try {
+    return validateStateScenarioUrl(
+      targetStorage.getItem(LAST_STATE_SCENARIO_STORAGE_KEY),
+      baseHref,
+    );
+  } catch {
+    return null;
+  }
+}
+
+function rememberStateScenarioUrl(value, storage = undefined, baseHref = null) {
+  const normalized = normalizeStatePageUrl(value, baseHref);
+  if (!normalized) return null;
+  let targetStorage = storage;
+  if (targetStorage === undefined) {
+    try {
+      targetStorage = typeof window !== "undefined" ? window.sessionStorage : null;
+    } catch {
+      targetStorage = null;
+    }
+  }
+  try {
+    targetStorage?.setItem?.(LAST_STATE_SCENARIO_STORAGE_KEY, normalized);
+  } catch {
+    // The current State tab still keeps its canonical link when storage is unavailable.
+  }
+  return normalized;
+}
+
 function initializeApp() {
   cacheElements();
   positionGeneralModelDrawer();
@@ -908,6 +979,7 @@ function positionGeneralModelDrawer() {
 
 function cacheElements() {
   [
+    "stateNavLink",
     "houseNavLink",
     "stateSelect",
     "yearSelect",
@@ -4625,6 +4697,15 @@ function renderFirstRunGuide({
       houseParams.set("year", String(activeYear));
     }
     houseParams.set("w", Number(w).toFixed(6));
+    try {
+      const statePageBase = new URL("./", window.location.href).href;
+      houseParams.set(
+        "stateScenario",
+        buildScenarioUrl({ embed: false, hash: "", baseUrl: statePageBase }),
+      );
+    } catch {
+      // Session storage still preserves the State return link when URL building is blocked.
+    }
     els.houseNavLink.href = `house.html?${houseParams.toString()}`;
   }
 
@@ -4919,12 +5000,19 @@ function buildScenarioUrl({ embed = false, hash = null, baseUrl = null } = {}) {
 }
 
 function syncScenarioUrl() {
-  if (
-    typeof window === "undefined" ||
-    preserveCleanLandingUrl ||
-    !window.history?.replaceState ||
-    !activeModel
-  ) return;
+  if (typeof window === "undefined" || !activeModel) return;
+  try {
+    const statePageBase = new URL("./", window.location.href).href;
+    const remembered = rememberStateScenarioUrl(
+      buildScenarioUrl({ embed: false, hash: "", baseUrl: statePageBase }),
+      undefined,
+      window.location.href,
+    );
+    if (remembered && els.stateNavLink) els.stateNavLink.href = remembered;
+  } catch {
+    // Navigation falls back to the static State link if a browser blocks storage.
+  }
+  if (preserveCleanLandingUrl || !window.history?.replaceState) return;
   try {
     const canonical = buildScenarioUrl({ embed: isEmbedMode, hash: window.location.hash });
     if (canonical !== window.location.href) window.history.replaceState(null, "", canonical);
@@ -10464,6 +10552,10 @@ if (typeof globalThis !== "undefined") {
     serializeCustomState,
     deserializeCustomState,
     parseScenarioUrl,
+    normalizeStatePageUrl,
+    validateStateScenarioUrl,
+    getRememberedStateScenarioUrl,
+    rememberStateScenarioUrl,
     buildScenarioUrl,
     buildPublicationRecord,
     buildPublicationSvg,
