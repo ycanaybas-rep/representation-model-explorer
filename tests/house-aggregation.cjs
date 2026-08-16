@@ -502,6 +502,41 @@ for (const year of availableYears) {
       },
       `${year} at w=${weight}: chamber colors distinguish exact modeled and fixed totals`,
     );
+    const chamberSwitchIndexes = house.getChamberSwitchIndexes(
+      chamberCategories,
+      snapshot.democraticSwitches,
+      snapshot.republicanSwitches,
+    );
+    equal(
+      chamberSwitchIndexes.toDemocratic.length,
+      snapshot.democraticSwitches,
+      `${year} at w=${weight}: chamber rings mark every switch to Democratic`,
+    );
+    equal(
+      chamberSwitchIndexes.toRepublican.length,
+      snapshot.republicanSwitches,
+      `${year} at w=${weight}: chamber rings mark every switch to Republican`,
+    );
+    check(
+      chamberSwitchIndexes.toDemocratic.every(
+        (index) => chamberCategories[index] === "modeled-dem",
+      ),
+      `${year} at w=${weight}: Democratic switch rings stay on modeled Democratic seats`,
+    );
+    check(
+      chamberSwitchIndexes.toRepublican.every(
+        (index) => chamberCategories[index] === "modeled-rep",
+      ),
+      `${year} at w=${weight}: Republican switch rings stay on modeled Republican seats`,
+    );
+    equal(
+      new Set([
+        ...chamberSwitchIndexes.toDemocratic,
+        ...chamberSwitchIndexes.toRepublican,
+      ]).size,
+      snapshot.flips,
+      `${year} at w=${weight}: chamber switch rings are unique and total changed districts`,
+    );
     deepEqual(
       chamberCategories.flatMap((category, index) =>
         category === "fixed-dem" ? [index] : [],
@@ -730,6 +765,17 @@ check(
   check(image.includes(`height="${height}"`), `${className} declares its intrinsic height`);
   check(/alt=""/.test(image) && /aria-hidden="true"/.test(image), `${className} is decorative`);
 });
+check(
+  /src="assets\/house-hero-state-delegations-v1\.png\?/.test(houseHtml) &&
+    /Several hand-drawn state delegations combine into a semicircular House chamber\./.test(
+      houseHtml,
+    ),
+  "House hero uses its own delegation-to-chamber illustration and descriptive alt text",
+);
+check(
+  fs.existsSync(path.join(projectRoot, "assets/house-hero-state-delegations-v1.png")),
+  "House-specific hero illustration is bundled",
+);
 const houseIds = Array.from(houseHtml.matchAll(/\bid="([^"]+)"/g), (match) => match[1]);
 equal(new Set(houseIds).size, houseIds.length, "House page IDs are unique");
 for (const match of houseHtml.matchAll(/\b(?:aria-labelledby|aria-describedby|aria-controls|for)="([^"]+)"/g)) {
@@ -756,6 +802,7 @@ check(
   "Fixed Democratic",
   "Modeled Republican",
   "Fixed Republican",
+  "Changed from local winner",
   "Fixed Independent",
 ].forEach((legendLabel) => {
   check(normalizedHouseHtml.includes(legendLabel), `House legend includes “${legendLabel}”`);
@@ -861,6 +908,21 @@ check(
     /\.house-seat\.is-dem\.is-fixed-dem\s*\{[\s\S]*?inset/.test(houseCss) &&
     /\.house-seat\.is-rep\.is-fixed-rep\s*\{[\s\S]*?inset/.test(houseCss),
   "Fixed Democratic and Republican seats have distinct outlined party colors",
+);
+check(
+  /\.house-seat\.is-switched\s*\{[\s\S]*?#f2be22[\s\S]*?#17231f/.test(houseCss) &&
+    /getChamberSwitchIndexes\([\s\S]*?is-switched/.test(houseJs),
+  "House chamber uses a dark-and-gold ring for changed modeled seats",
+);
+check(
+  /\.house-main\s*\{[\s\S]*?width:\s*min\(1400px, calc\(100% - 48px\)\)/.test(
+    houseCss,
+  ) &&
+    /\.house-hero-visual\s*\{[\s\S]*?width:\s*min\(100%, 550px\)/.test(houseCss) &&
+    /@media \(max-width:\s*900px\)[\s\S]*?\.house-hero-visual\s*\{[\s\S]*?display:\s*none/.test(
+      houseCss,
+    ),
+  "House frame and hero geometry match the State page",
 );
 check(
   houseHtml.indexOf('src="election-data.js') < houseHtml.indexOf('src="script.js') &&

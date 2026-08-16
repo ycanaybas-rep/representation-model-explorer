@@ -8,6 +8,7 @@ const projectRoot = path.resolve(__dirname, "..");
 const indexHtml = fs.readFileSync(path.join(projectRoot, "index.html"), "utf8");
 const script = fs.readFileSync(path.join(projectRoot, "script.js"), "utf8");
 const siteScript = fs.readFileSync(path.join(projectRoot, "site.js"), "utf8");
+const standaloneStyles = fs.readFileSync(path.join(projectRoot, "standalone.css"), "utf8");
 const styles = [
   "model-workspace.css",
   "model-editorial-system.css",
@@ -57,6 +58,21 @@ check(
   "the visible mode-specific map result is a polite live status",
 );
 check(/id="workspaceResultLabel"/.test(indexHtml), "workspace result label can follow the displayed allocation mode");
+[
+  "mobileDistrictOverview",
+  "mobileMapSummary",
+  "mobileDistrictGrid",
+  "mobileDistrictDetail",
+].forEach((id) => {
+  check(ids.includes(id), `mobile allocation view includes #${id}`);
+});
+check(
+  /id="mobileDistrictOverview"[\s\S]*?aria-label="District allocation overview"/.test(
+    indexHtml,
+  ) &&
+    /id="mobileDistrictDetail"[^>]*aria-live="polite"/.test(indexHtml),
+  "mobile allocation view is labelled and announces selected district details",
+);
 equal(
   Array.from(indexHtml.matchAll(/<textarea[^>]+maxlength="256"/g)).length,
   5,
@@ -94,6 +110,33 @@ for (const match of indexHtml.matchAll(/\bhref="([^"]+)"/g)) {
 check(/--workspace-focus:\s*#18514c/i.test(styles), "focus indicator uses the high-contrast teal token");
 check(/--editorial-gold-text:\s*#8b5f14/i.test(styles), "small gold text uses the accessible token");
 check(!/extendedMetricsPanel|extended-diagnostics|extended-metric-grid|diagnostic-extension/.test(styles), "obsolete extended-diagnostics selectors are removed");
+check(
+  /@media \(max-width:\s*720px\)[\s\S]*?\.map-surface > :is\(\.map-wrap, \.map-pan-cue\)[\s\S]*?display:\s*none !important[\s\S]*?\.mobile-district-overview\s*\{[\s\S]*?display:\s*grid/.test(
+    styles,
+  ),
+  "mobile replaces the crowded schematic map with the compact district overview",
+);
+check(
+  /function renderMobileDistrictOverview\(/.test(script) &&
+    /\.mobile-district-chip/.test(script) &&
+    /"ArrowLeft"[\s\S]*?"ArrowRight"[\s\S]*?"Home"[\s\S]*?"End"/.test(script),
+  "mobile district chips use one roving keyboard stop with arrow and edge navigation",
+);
+check(
+  /district-switch-rigid-keyline/.test(script) &&
+    /Gold \+ dark frame/.test(script) &&
+    /\.district-switch-rigid-keyline\s*\{[\s\S]*?stroke:\s*var\(--editorial-ink\)/.test(
+      styles,
+    ) &&
+    /\.district-switch-rigid-outline\s*\{[\s\S]*?stroke:\s*#f2be22/.test(styles),
+  "changed districts use a high-contrast ink, yellow, and paper frame with a written legend",
+);
+check(
+  /:is\(\.site-header \.header-inner, \.app-shell, \.house-main, \.footer-inner\)[\s\S]*?width:\s*min\(1400px, calc\(100% - 48px\)\)/.test(
+    standaloneStyles,
+  ),
+  "State and House share one desktop frame width",
+);
 
 check(/function moveRovingSvgFocus\(/.test(script), "shared roving SVG focus behavior exists");
 check(/moveRovingSvgFocus\(event, els\.mapShapes, "\.district-shape"\)/.test(script), "map districts use roving focus");
