@@ -382,7 +382,16 @@ body[data-page="explorer"] .guided-profile-panel {
 
 body[data-page="explorer"] .guided-profile-fields {
   height: auto;
+  grid-template-columns: minmax(0, 1fr) 116px;
   align-items: end;
+}
+
+body[data-page="explorer"] .guided-profile-actions {
+  grid-column: 1 / -1;
+}
+
+body[data-page="explorer"] .custom-profile-launch {
+  flex: 1;
 }
 
 body[data-page="explorer"] .year-control {
