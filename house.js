@@ -630,6 +630,10 @@
       "houseCoverageDetail",
       "houseWeight",
       "houseWeightValue",
+      "houseWeightEntry",
+      "houseWeightInput",
+      "houseWeightApply",
+      "houseWeightInputStatus",
       "houseWeightMarkers",
       "housePreviousComposition",
       "houseNextComposition",
@@ -711,6 +715,13 @@
       renderCurrentWeight();
     });
     elements.houseWeight.addEventListener("keydown", handleWeightKeyboard);
+    elements.houseWeightEntry.addEventListener("submit", applyManualWeight);
+    elements.houseWeightInput.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter" || event.isComposing) return;
+      event.preventDefault();
+      elements.houseWeightEntry.requestSubmit();
+    });
+    elements.houseWeightInput.addEventListener("input", clearManualWeightError);
 
     elements.housePreviousComposition.addEventListener("click", () => {
       moveToComposition(-1);
@@ -757,6 +768,43 @@
         renderFrame = 0;
         renderCurrentWeight();
       });
+    }
+
+    function clearManualWeightError() {
+      elements.houseWeightInput.removeAttribute("aria-invalid");
+      elements.houseWeightInput.setCustomValidity("");
+      if (!elements.houseWeightInputStatus.dataset.state) return;
+      delete elements.houseWeightInputStatus.dataset.state;
+      delete elements.houseWeightInputStatus.dataset.weight;
+      elements.houseWeightInputStatus.textContent =
+        "Use a value from 0 to 1, with up to six decimals.";
+    }
+
+    function applyManualWeight(event) {
+      event.preventDefault();
+      const weight = engine.parseWeightInput?.(elements.houseWeightInput.value);
+      if (weight === null || weight === undefined) {
+        elements.houseWeightInput.setAttribute("aria-invalid", "true");
+        elements.houseWeightInput.setCustomValidity(
+          "Enter a number from 0 to 1 with up to six decimals.",
+        );
+        elements.houseWeightInputStatus.dataset.state = "error";
+        elements.houseWeightInputStatus.textContent = "Enter a number from 0 to 1.";
+        elements.houseWeightInput.focus({ preventScroll: true });
+        return;
+      }
+      const canonicalWeight = Number(weight).toFixed(6);
+      elements.houseWeightInput.value = canonicalWeight;
+      elements.houseWeightInput.removeAttribute("aria-invalid");
+      elements.houseWeightInput.setCustomValidity("");
+      elements.houseWeightInputStatus.dataset.state = "success";
+      elements.houseWeightInputStatus.dataset.weight = canonicalWeight;
+      elements.houseWeightInputStatus.textContent = `Applied ${formatWeightWithPercent(
+        weight,
+        engine,
+      )}.`;
+      elements.houseWeight.value = canonicalWeight;
+      renderCurrentWeight(true);
     }
 
     function renderYearInputs() {
@@ -1077,6 +1125,21 @@
       const formattedWeight = formatWeightWithPercent(weight, engine);
       elements.houseWeightValue.value = formattedWeight;
       elements.houseWeightValue.textContent = formattedWeight;
+      const canonicalWeight = weight.toFixed(6);
+      if (document.activeElement !== elements.houseWeightInput) {
+        elements.houseWeightInput.value = canonicalWeight;
+        elements.houseWeightInput.removeAttribute("aria-invalid");
+        elements.houseWeightInput.setCustomValidity("");
+        if (
+          elements.houseWeightInputStatus.dataset.state &&
+          elements.houseWeightInputStatus.dataset.weight !== canonicalWeight
+        ) {
+          delete elements.houseWeightInputStatus.dataset.state;
+          delete elements.houseWeightInputStatus.dataset.weight;
+          elements.houseWeightInputStatus.textContent =
+            "Use a value from 0 to 1, with up to six decimals.";
+        }
+      }
       elements.houseWeight.setAttribute(
         "aria-valuetext",
         `w ${formatWeight(weight, engine)}; ${formatWeightShare(1 - weight, engine)} local district results and ${formatWeightShare(weight, engine)} statewide representation; ${activeSnapshot.fullDemSeats} Democratic, ${activeSnapshot.fullRepSeats} Republican, and ${activeSnapshot.fullOtherSeats} Independent House seats; outside-panel assignments remain fixed`,

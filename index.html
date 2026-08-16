@@ -29,9 +29,9 @@
     <link rel="stylesheet" href="vendor/katex/katex.min.css" />
     <link rel="stylesheet" href="styles.css?v=20260814authors1" />
     <link rel="stylesheet" href="district-maps.css?v=20260720c" />
-    <link rel="stylesheet" href="scholarly-ui.css?v=20260728surface1" />
+    <link rel="stylesheet" href="scholarly-ui.css?v=20260816weight1" />
     <link rel="stylesheet" href="model-workspace.css?v=20260814polish1" />
-    <link rel="stylesheet" href="model-editorial-system.css?v=20260816visual1" />
+    <link rel="stylesheet" href="model-editorial-system.css?v=20260816weight1" />
     <link rel="stylesheet" href="final-quality-control.css?v=20260814polish1" />
     <link rel="stylesheet" href="standalone.css?v=20260816unity2" />
   </head>
@@ -257,18 +257,58 @@
                     <span id="mapWeightEndpoint"><strong>w = 1</strong><small>Statewide target</small></span>
                   </div>
                   <div class="weight-switch-tools">
-                    <button
-                      id="mapWeightFocus"
-                      class="weight-switch-focus"
-                      type="button"
-                      aria-controls="mapWSlider"
-                      aria-pressed="false"
-                      hidden
-                    >
-                      Fine-tune switches
-                    </button>
+                    <div class="weight-switch-actions" aria-label="Move between model results">
+                      <button
+                        id="mapWeightFocus"
+                        class="weight-switch-focus"
+                        type="button"
+                        aria-controls="mapWSlider"
+                        aria-pressed="false"
+                        hidden
+                      >
+                        Fine-tune switches
+                      </button>
+                      <button
+                        id="mapPreviousResult"
+                        class="weight-result-jump"
+                        type="button"
+                        aria-controls="mapWSlider"
+                        disabled
+                      >
+                        Previous result
+                      </button>
+                      <button
+                        id="mapNextResult"
+                        class="weight-result-jump"
+                        type="button"
+                        aria-controls="mapWSlider"
+                        disabled
+                      >
+                        Next result
+                      </button>
+                    </div>
                     <small id="mapWeightSwitchStatus">0 switches</small>
                   </div>
+                  <form id="mapWeightEntry" class="weight-direct-entry" novalidate>
+                    <label for="mapWInput">Enter exact <i>w</i></label>
+                    <div class="weight-direct-field">
+                      <span aria-hidden="true">w =</span>
+                      <input
+                        id="mapWInput"
+                        type="text"
+                        inputmode="decimal"
+                        enterkeyhint="done"
+                        maxlength="8"
+                        value="0.500000"
+                        autocomplete="off"
+                        aria-describedby="mapWInputStatus"
+                      />
+                    </div>
+                    <button id="mapWApply" class="button-secondary" type="submit">Set weight</button>
+                    <small id="mapWInputStatus" class="weight-direct-status" role="status" aria-live="polite">
+                      Use a value from 0 to 1, with up to six decimals.
+                    </small>
+                  </form>
                   <span id="weightPlainLanguage" hidden aria-hidden="true"></span>
                 </div>
 
@@ -1619,6 +1659,6 @@
     <script src="vendor/katex/katex.min.js" defer></script>
     <script src="site.js?v=20260814polish1" defer></script>
     <script src="election-data.js?v=20260804dataset1" defer></script>
-    <script src="script.js?v=20260816visual1" defer></script>
+    <script src="script.js?v=20260816weight1" defer></script>
   </body>
 </html>

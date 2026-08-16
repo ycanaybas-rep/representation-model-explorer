@@ -498,6 +498,7 @@ let mapWeightFocused = false;
 let mapWeightDomain = { min: 0, max: 1, digits: 3 };
 let floatingWeightFocused = false;
 let floatingWeightDomain = { min: 0, max: 1, digits: 3 };
+let pendingWeightRenderFrame = 0;
 
 if (typeof document !== "undefined") {
   document.addEventListener("DOMContentLoaded", () => {
@@ -934,7 +935,13 @@ function cacheElements() {
     "mapWeightLower",
     "mapWeightMidpoint",
     "mapWeightFocus",
+    "mapPreviousResult",
+    "mapNextResult",
     "mapWeightSwitchStatus",
+    "mapWeightEntry",
+    "mapWInput",
+    "mapWApply",
+    "mapWInputStatus",
     "floatingWeightControl",
     "floatingWSlider",
     "floatingWValue",
@@ -1776,6 +1783,29 @@ function populateBenchmarkControls() {
   els.benchmarkSelect.append(custom);
 }
 
+function renderSelectedWeight() {
+  clearCandidateInspection();
+  selectModelMapMode();
+  setGuidedProgress(2);
+  render();
+}
+
+function requestSelectedWeightRender() {
+  if (pendingWeightRenderFrame) return;
+  pendingWeightRenderFrame = window.requestAnimationFrame(() => {
+    pendingWeightRenderFrame = 0;
+    renderSelectedWeight();
+  });
+}
+
+function flushSelectedWeightRender() {
+  if (pendingWeightRenderFrame) {
+    window.cancelAnimationFrame(pendingWeightRenderFrame);
+    pendingWeightRenderFrame = 0;
+  }
+  renderSelectedWeight();
+}
+
 function bindControls() {
   els.stateSelect.addEventListener("change", () => {
     const selectedState = els.stateSelect.value;
@@ -1830,26 +1860,39 @@ function bindControls() {
     openCustomStateDialog(els.customStateLaunch);
   });
 
-  els.wSlider.addEventListener("input", () => {
-    clearCandidateInspection();
-    selectModelMapMode();
-    setGuidedProgress(2);
-    render();
-  });
+  els.wSlider.addEventListener("input", requestSelectedWeightRender);
+  els.wSlider.addEventListener("change", flushSelectedWeightRender);
 
   els.mapWSlider.addEventListener("input", () => {
     els.wSlider.value = els.mapWSlider.value;
     els.wSlider.dispatchEvent(new Event("input", { bubbles: true }));
   });
+  els.mapWSlider.addEventListener("change", () => {
+    els.wSlider.value = els.mapWSlider.value;
+    els.wSlider.dispatchEvent(new Event("change", { bubbles: true }));
+  });
   els.mapWeightFocus.addEventListener("click", toggleMapWeightFocus);
+  els.mapPreviousResult.addEventListener("click", () => moveWeightRegime(-1));
+  els.mapNextResult.addEventListener("click", () => moveWeightRegime(1));
+  els.mapWeightEntry.addEventListener("submit", applyMapManualWeight);
+  els.mapWInput.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter" || event.isComposing) return;
+    event.preventDefault();
+    els.mapWeightEntry.requestSubmit();
+  });
+  els.mapWInput.addEventListener("input", clearMapManualWeightError);
 
   els.floatingWSlider.addEventListener("input", () => {
     els.wSlider.value = els.floatingWSlider.value;
     els.wSlider.dispatchEvent(new Event("input", { bubbles: true }));
   });
+  els.floatingWSlider.addEventListener("change", () => {
+    els.wSlider.value = els.floatingWSlider.value;
+    els.wSlider.dispatchEvent(new Event("change", { bubbles: true }));
+  });
   els.floatingWeightFocus.addEventListener("click", toggleFloatingWeightFocus);
-  els.floatingPreviousSwitch.addEventListener("click", () => moveFloatingWeightRegime(-1));
-  els.floatingNextSwitch.addEventListener("click", () => moveFloatingWeightRegime(1));
+  els.floatingPreviousSwitch.addEventListener("click", () => moveWeightRegime(-1));
+  els.floatingNextSwitch.addEventListener("click", () => moveWeightRegime(1));
 
   bindSharedWeightControls();
 
@@ -2105,6 +2148,10 @@ function bindSharedWeightControls() {
       els.wSlider.value = slider.value;
       els.wSlider.dispatchEvent(new Event("input", { bubbles: true }));
     });
+    slider?.addEventListener("change", () => {
+      els.wSlider.value = slider.value;
+      els.wSlider.dispatchEvent(new Event("change", { bubbles: true }));
+    });
     focusButton?.addEventListener("click", () => toggleSharedWeightFocus(control));
   });
 }
@@ -2283,6 +2330,19 @@ function formatAdaptiveWeight(
     6,
   );
   return clamp(numericValue, 0, 1).toFixed(digits);
+}
+
+function parseWeightInput(value) {
+  const source = String(value ?? "").trim();
+  if (!source) return null;
+  const commaCount = (source.match(/,/g) || []).length;
+  if (commaCount > 1 || (commaCount === 1 && source.includes("."))) return null;
+  const normalized = source.replace(",", ".");
+  if (!/^(?:0(?:\.\d{1,6})?|1(?:\.0{1,6})?|\.\d{1,6})$/.test(normalized)) {
+    return null;
+  }
+  const numericValue = Number(normalized);
+  return Number.isFinite(numericValue) ? numericValue : null;
 }
 
 function formatCompactSwitchWeight(value) {
@@ -2697,6 +2757,26 @@ function configureFloatingWeightJump(button, segment, direction, digits) {
   );
 }
 
+function configureMapWeightJump(button, segment, direction, digits) {
+  const heldFocus = document.activeElement === button;
+  button.disabled = !segment;
+  if (!segment) {
+    button.removeAttribute("aria-label");
+    delete button.dataset.weight;
+    if (heldFocus) els.mapWSlider.focus({ preventScroll: true });
+    return;
+  }
+  const midpoint = clamp((segment.start + segment.end) / 2, 0, 1);
+  button.dataset.weight = midpoint.toFixed(6);
+  button.setAttribute(
+    "aria-label",
+    `${direction < 0 ? "Previous" : "Next"} model result, ${formatSeatCount(
+      segment.demSeats,
+      segment.demSeats + segment.repSeats,
+    )}, at w = ${midpoint.toFixed(digits)}.`,
+  );
+}
+
 function renderFloatingWeightSchedule(schedule, w, preferredDemSeats) {
   const precision = getAdaptiveWeightPrecision(schedule, w, preferredDemSeats);
   const switches = schedule?.switches || [];
@@ -2732,6 +2812,8 @@ function renderFloatingWeightSchedule(schedule, w, preferredDemSeats) {
   const next = precision.index < segments.length - 1 ? segments[precision.index + 1] : null;
   configureFloatingWeightJump(els.floatingPreviousSwitch, previous, -1, precision.digits);
   configureFloatingWeightJump(els.floatingNextSwitch, next, 1, precision.digits);
+  configureMapWeightJump(els.mapPreviousResult, previous, -1, precision.digits);
+  configureMapWeightJump(els.mapNextResult, next, 1, precision.digits);
 
   const switchLabel = floatingWeightFocused
     ? `${visibleSwitches.length}${
@@ -2782,7 +2864,7 @@ function toggleFloatingWeightFocus() {
   render();
 }
 
-function moveFloatingWeightRegime(direction) {
+function moveWeightRegime(direction) {
   const schedule = activeModel?.schedule;
   if (!schedule?.segments?.length) return;
   const precision = getAdaptiveWeightPrecision(
@@ -2794,7 +2876,42 @@ function moveFloatingWeightRegime(direction) {
   if (!target) return;
   const midpoint = clamp((target.start + target.end) / 2, 0, 1);
   els.wSlider.value = midpoint.toFixed(6);
-  els.wSlider.dispatchEvent(new Event("input", { bubbles: true }));
+  els.wSlider.dispatchEvent(new Event("change", { bubbles: true }));
+}
+
+function clearMapManualWeightError() {
+  els.mapWInput.removeAttribute("aria-invalid");
+  els.mapWInput.setCustomValidity("");
+  if (!els.mapWInputStatus.dataset.state) return;
+  delete els.mapWInputStatus.dataset.state;
+  delete els.mapWInputStatus.dataset.weight;
+  els.mapWInputStatus.textContent = "Use a value from 0 to 1, with up to six decimals.";
+}
+
+function applyMapManualWeight(event) {
+  event.preventDefault();
+  const weight = parseWeightInput(els.mapWInput.value);
+  if (weight === null) {
+    els.mapWInput.setAttribute("aria-invalid", "true");
+    els.mapWInput.setCustomValidity("Enter a number from 0 to 1 with up to six decimals.");
+    els.mapWInputStatus.dataset.state = "error";
+    els.mapWInputStatus.textContent = "Enter a number from 0 to 1.";
+    els.mapWInput.focus({ preventScroll: true });
+    return;
+  }
+  const canonicalWeight = weight.toFixed(6);
+  els.mapWInput.value = canonicalWeight;
+  els.mapWInput.removeAttribute("aria-invalid");
+  els.mapWInput.setCustomValidity("");
+  els.mapWInputStatus.dataset.state = "success";
+  els.mapWInputStatus.dataset.weight = canonicalWeight;
+  els.mapWInputStatus.textContent = `Applied ${formatWeightWithPercent(
+    weight,
+    activeModel?.schedule,
+    activeModel?.best?.demSeats ?? null,
+  )}.`;
+  els.wSlider.value = canonicalWeight;
+  els.wSlider.dispatchEvent(new Event("change", { bubbles: true }));
 }
 
 function setAdvancedPanelExpanded(
@@ -4302,7 +4419,9 @@ function renderInterpretation(w, schedule, best) {
     Math.max(precision.domain.max - precision.domain.min, 1e-9) *
     100
   ).toFixed(1)}%`;
-  els.wSlider.step = String(precision.step);
+  // Preserve every explicitly entered public weight. Visible sliders keep an
+  // adaptive keyboard step, but the shared model source always uses six digits.
+  els.wSlider.step = String(WEIGHT_URL_STEP);
   els.wSlider.value = canonicalWeightText;
   els.wValue.value = weightText;
   els.wSlider.style.setProperty("--weight-progress", progress);
@@ -4310,6 +4429,20 @@ function renderInterpretation(w, schedule, best) {
   els.mapWSlider.value = canonicalWeightText;
   els.mapWSlider.style.setProperty("--weight-progress", primaryProgress);
   els.mapWValue.value = `w = ${weightText}`;
+  if (document.activeElement !== els.mapWInput) {
+    els.mapWInput.value = canonicalWeightText;
+    els.mapWInput.removeAttribute("aria-invalid");
+    els.mapWInput.setCustomValidity("");
+    if (
+      els.mapWInputStatus.dataset.state &&
+      els.mapWInputStatus.dataset.weight !== canonicalWeightText
+    ) {
+      delete els.mapWInputStatus.dataset.state;
+      delete els.mapWInputStatus.dataset.weight;
+      els.mapWInputStatus.textContent =
+        "Use a value from 0 to 1, with up to six decimals.";
+    }
+  }
   els.floatingWSlider.step = String(precision.step);
   els.floatingWSlider.value = canonicalWeightText;
   els.floatingWSlider.style.setProperty("--weight-progress", floatingProgress);
@@ -10385,6 +10518,7 @@ if (typeof globalThis !== "undefined") {
     getSwitchFocusDomain,
     getWeightFigureView,
     getPaperChartWeightAtClientX,
+    parseWeightInput,
     formatAdaptiveWeight,
     formatCompactSwitchWeight,
     formatWeightWithPercent,
