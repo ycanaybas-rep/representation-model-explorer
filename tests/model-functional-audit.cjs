@@ -24,6 +24,31 @@ check(engine, "shared model engine is exported");
 equal(engine.FORMULA_VALIDATION_MAX_DISTRICTS, 53, "formula validation covers the dataset maximum");
 equal(engine.MAX_FORMULA_SOURCE_LENGTH, 256, "live and permalink formulas share one length limit");
 
+[
+  ["0", 0],
+  ["1", 1],
+  [".5", 0.5],
+  ["0.003250", 0.00325],
+  ["0.000886", 0.000886],
+  ["0,003250", 0.00325],
+].forEach(([source, expected]) => {
+  equal(engine.parseWeightInput(source), expected, `manual weight accepts ${source}`);
+});
+[
+  "",
+  " ",
+  "-0.1",
+  "1.000001",
+  "0.1234567",
+  "1e-3",
+  "0x1",
+  "0.1.2",
+  "0,1.2",
+  "weight",
+].forEach((source) => {
+  equal(engine.parseWeightInput(source), null, `manual weight rejects ${JSON.stringify(source)}`);
+});
+
 const indexHtml = fs.readFileSync(path.join(projectRoot, "index.html"), "utf8");
 check(/id="mapViewLabel"/.test(indexHtml), "map view label can be updated with the active mode");
 equal(
@@ -34,6 +59,15 @@ equal(
 check(
   !/id="analysisActionStatus"\s+class="sr-only"/.test(indexHtml),
   "the map export status is not screen-reader-only",
+);
+const stateScript = fs.readFileSync(path.join(projectRoot, "script.js"), "utf8");
+check(
+  /mapWeightEntry\.requestSubmit\(\)/.test(stateScript),
+  "State exact-weight entry supports the mobile keyboard Enter action",
+);
+check(
+  /els\.wSlider\.step = String\(WEIGHT_URL_STEP\)/.test(stateScript),
+  "State exact-weight entry retains six-decimal precision in the model source",
 );
 
 const defaultCompilation = engine.compileSpecification(engine.defaultFormulas);

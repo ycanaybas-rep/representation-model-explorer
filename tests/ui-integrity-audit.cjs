@@ -9,6 +9,7 @@ const indexHtml = fs.readFileSync(path.join(projectRoot, "index.html"), "utf8");
 const script = fs.readFileSync(path.join(projectRoot, "script.js"), "utf8");
 const siteScript = fs.readFileSync(path.join(projectRoot, "site.js"), "utf8");
 const standaloneStyles = fs.readFileSync(path.join(projectRoot, "standalone.css"), "utf8");
+const scholarlyStyles = fs.readFileSync(path.join(projectRoot, "scholarly-ui.css"), "utf8");
 const styles = [
   "model-workspace.css",
   "model-editorial-system.css",
@@ -151,5 +152,34 @@ check(/function moveRovingSvgFocus\(/.test(script), "shared roving SVG focus beh
 check(/moveRovingSvgFocus\(event, els\.mapShapes, "\.district-shape"\)/.test(script), "map districts use roving focus");
 check(/moveRovingSvgFocus\(event, els\.paretoOverlay, "\.pareto-seat-point"\)/.test(script), "Pareto points use roving focus");
 check(/moveRovingSvgFocus\(event, els\.isoLossChart, "\.iso-seat-point"\)/.test(script), "iso-loss points use roving focus");
+check(
+  /id="mapWeightEntry"[\s\S]*?id="mapWInput"[\s\S]*?inputmode="decimal"[\s\S]*?id="mapWApply"[\s\S]*?Set weight/.test(
+    indexHtml,
+  ) && /id="mapWInputStatus"[\s\S]*?role="status"[\s\S]*?aria-live="polite"/.test(indexHtml),
+  "State exposes a validated exact-weight entry with live feedback",
+);
+check(
+  /id="mapPreviousResult"[\s\S]*?Previous result[\s\S]*?id="mapNextResult"[\s\S]*?Next result/.test(
+    indexHtml,
+  ) && /configureMapWeightJump\([\s\S]*?moveWeightRegime\(direction\)/.test(script),
+  "State exposes direct previous and next model-result controls",
+);
+check(
+  /function requestSelectedWeightRender\(\)[\s\S]*?requestAnimationFrame/.test(script) &&
+    /wSlider\.addEventListener\("change", flushSelectedWeightRender\)/.test(script),
+  "State coalesces drag rendering and flushes the final selected weight",
+);
+check(
+  /\.weight-direct-entry\s*\{[\s\S]*?grid-template-columns:[\s\S]*?\.weight-direct-field\s*\{[\s\S]*?min-height:\s*44px/.test(
+    scholarlyStyles,
+  ),
+  "State and House share one responsive exact-weight entry component",
+);
+check(
+  /@media \(max-width:\s*720px\), \(pointer:\s*coarse\)[\s\S]*?input\[type="range"\][\s\S]*?min-height:\s*52px[\s\S]*?::-webkit-slider-thumb[\s\S]*?width:\s*30px/.test(
+    styles,
+  ),
+  "State sliders use larger touch rails and thumbs on phones and coarse pointers",
+);
 
 console.log(`UI integrity audit passed ${assertionCount.toLocaleString("en-US")} assertions.`);

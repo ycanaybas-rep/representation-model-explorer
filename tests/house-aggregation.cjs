@@ -746,6 +746,7 @@ for (const pageName of pageNames) {
 const houseHtml = fs.readFileSync(path.join(projectRoot, "house.html"), "utf8");
 const normalizedHouseHtml = houseHtml.replace(/\s+/g, " ");
 const houseCss = fs.readFileSync(path.join(projectRoot, "house.css"), "utf8");
+const scholarlyCss = fs.readFileSync(path.join(projectRoot, "scholarly-ui.css"), "utf8");
 const houseJs = fs.readFileSync(path.join(projectRoot, "house.js"), "utf8");
 const siteJs = fs.readFileSync(path.join(projectRoot, "site.js"), "utf8");
 const requiredHouseIds = [
@@ -764,6 +765,10 @@ const requiredHouseIds = [
   "houseTrajectoryDescription",
   "houseTrajectoryReading",
   "houseChartScale",
+  "houseWeightEntry",
+  "houseWeightInput",
+  "houseWeightApply",
+  "houseWeightInputStatus",
   "houseOtherSeatSummary",
   "houseOtherSeats",
   "houseOtherLegend",
@@ -894,6 +899,36 @@ check(
       houseJs,
     ),
   "House chart is keyboard operable with arrows, paging, Home, and End",
+);
+check(
+  /id="houseWeightEntry"[\s\S]*?id="houseWeightInput"[\s\S]*?inputmode="decimal"[\s\S]*?id="houseWeightApply"[\s\S]*?Set weight/.test(
+    houseHtml,
+  ) &&
+    /id="houseWeightInputStatus"[\s\S]*?role="status"[\s\S]*?aria-live="polite"/.test(
+      houseHtml,
+    ),
+  "House exposes a precise manual weight entry with live validation feedback",
+);
+check(
+  /houseWeightEntry\.addEventListener\("submit", applyManualWeight\)/.test(houseJs) &&
+    /houseWeightEntry\.requestSubmit\(\)/.test(houseJs) &&
+    /engine\.parseWeightInput\?\.\(elements\.houseWeightInput\.value\)/.test(houseJs) &&
+    /document\.activeElement !== elements\.houseWeightInput[\s\S]*?houseWeightInput\.value = canonicalWeight/.test(
+      houseJs,
+    ),
+  "House manual entry reuses State validation and stays synchronized with every weight path",
+);
+check(
+  /\.weight-direct-entry\s*\{[\s\S]*?grid-template-columns:[\s\S]*?\.weight-direct-entry \.button-secondary\s*\{[\s\S]*?min-height:\s*44px/.test(
+    scholarlyCss,
+  ),
+  "House manual entry uses the shared responsive control geometry",
+);
+check(
+  /@media \(max-width:\s*720px\), \(pointer:\s*coarse\)[\s\S]*?\.house-weight-track input\[type="range"\][\s\S]*?min-height:\s*52px[\s\S]*?::-webkit-slider-thumb[\s\S]*?width:\s*30px/.test(
+    houseCss,
+  ),
+  "House slider uses a larger mobile touch rail and thumb",
 );
 check(
   /id="houseSeatShareChart"[\s\S]*?preserveAspectRatio="xMidYMid meet"[\s\S]*?aria-labelledby="houseTrajectorySvgTitle"[\s\S]*?aria-describedby="houseTrajectoryDescription"/.test(
