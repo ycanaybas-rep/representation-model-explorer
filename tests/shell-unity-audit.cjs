@@ -329,6 +329,44 @@ check(hasDeclaration(visualRule, "width", /550px/), "shared hero illustrations m
 check(hasDeclaration(visualRule, "justify-self", /^end$/), "shared hero illustrations must align to the same grid edge");
 check(hasDeclaration(visualRule, "margin", /^0$/), "shared hero illustrations must use the same zero margin");
 
+const stateProfilePanelRule = baseRules.find((rule) =>
+  containsBoth(rule, 'body[data-page="explorer"]', ".guided-profile-panel"),
+);
+check(Boolean(stateProfilePanelRule), "State election controls must define their compact panel alignment");
+check(
+  hasDeclaration(stateProfilePanelRule, "align-content", /^start$/),
+  "State election controls must start at the top instead of leaving an unexplained blank area above them",
+);
+
+const stateProfileFieldsRule = baseRules.find((rule) =>
+  containsBoth(rule, 'body[data-page="explorer"]', ".guided-profile-fields"),
+);
+check(Boolean(stateProfileFieldsRule), "State election fields must define compact geometry");
+check(
+  hasDeclaration(stateProfileFieldsRule, "height", /^auto$/) &&
+    hasDeclaration(stateProfileFieldsRule, "align-items", /^end$/),
+  "State election fields must stay compact while aligning buttons with the selector bottoms",
+);
+
+const yearSelectRule = baseRules.find((rule) =>
+  containsBoth(rule, 'body[data-page="explorer"]', ".year-control select"),
+);
+check(Boolean(yearSelectRule), "State year selector must define an explicit safe width");
+check(
+  hasDeclaration(yearSelectRule, "width", /^100%$/) &&
+    hasDeclaration(yearSelectRule, "min-width", /^116px$/),
+  "State year selector must reserve enough room for every four-digit year",
+);
+
+const mobileYearGridRule = rulesAt(430).find((rule) =>
+  containsBoth(rule, 'body[data-page="explorer"]', ".guided-profile-fields"),
+);
+check(Boolean(mobileYearGridRule), "430px State layout must define a protected year column");
+check(
+  hasDeclaration(mobileYearGridRule, "grid-template-columns", /116px$/),
+  "430px State layout must keep the full four-digit year visible",
+);
+
 for (const width of [1120, 900, 720, 430, 390, 340]) {
   const breakpointRules = rulesAt(width);
   check(breakpointRules.length > 0, `standalone.css must define the ${width}px responsive breakpoint`);
