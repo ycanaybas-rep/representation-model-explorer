@@ -740,7 +740,7 @@ check(
   /id="houseHeroQuestion"[^>]*>[\s\S]*?\?\s*<\/p>/.test(houseHtml),
   "House hero follows its title with a direct question",
 );
-["See how", "state delegations", "shape the House."].forEach((line) => {
+["See how", "state delegations", ">shape<", ">the House.<"].forEach((line) => {
   check(normalizedHouseHtml.includes(line), `House hero includes “${line}”`);
 });
 [
