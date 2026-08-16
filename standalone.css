@@ -410,6 +410,91 @@ body[data-page="house"]
   letter-spacing: -0.035em;
 }
 
+/* Carry the hero's hand-drawn emphasis into the lower editorial chapters. */
+:is(body[data-page="explorer"], body[data-page="house"]) .section-title-mark {
+  position: relative;
+  z-index: 0;
+  display: inline-block;
+  padding: 0 0.04em 0.09em;
+  white-space: nowrap;
+}
+
+:is(body[data-page="explorer"], body[data-page="house"])
+  .section-title-marked-words {
+  position: relative;
+  z-index: 2;
+}
+
+:is(body[data-page="explorer"], body[data-page="house"])
+  .section-title-underline {
+  position: absolute;
+  z-index: 1;
+  right: -0.08em;
+  bottom: -0.14em;
+  left: -0.08em;
+  display: block;
+  width: calc(100% + 0.16em);
+  height: 0.32em;
+  object-fit: fill;
+  opacity: 0.96;
+  filter: brightness(1.55) saturate(1.2);
+  transform: rotate(-0.55deg);
+  pointer-events: none;
+}
+
+body[data-page="explorer"] .advanced-toggle {
+  min-height: 118px;
+  padding: 22px 26px;
+}
+
+body[data-page="explorer"] .advanced-toggle-copy {
+  gap: 7px;
+}
+
+body[data-page="explorer"] .advanced-toggle-copy > strong {
+  color: var(--conference-paper);
+  font-family: var(--conference-serif);
+  font-size: clamp(1.32rem, 1.7vw, 1.64rem);
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  line-height: 1.12;
+}
+
+body[data-page="explorer"] .advanced-toggle-copy > span {
+  max-width: 76ch;
+  color: rgba(255, 255, 255, 0.7);
+  font-family: var(--conference-sans);
+  font-size: 0.8rem;
+  font-weight: 460;
+  line-height: 1.55;
+}
+
+body[data-page="explorer"] .advanced-toggle small {
+  font-family: var(--conference-sans);
+  font-weight: 700;
+  letter-spacing: 0.045em;
+}
+
+body[data-page="explorer"] .advanced-toggle-summary > strong {
+  color: var(--conference-paper);
+  font-family: var(--conference-serif);
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: -0.018em;
+  line-height: 1.3;
+}
+
+body[data-page="explorer"] .advanced-toggle-action b {
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+body[data-page="explorer"] #paperFigures.paper-figures-chapter {
+  margin-top: clamp(48px, 6vw, 72px);
+  padding-top: clamp(38px, 4.5vw, 54px);
+  border-top: 1px solid var(--conference-line-strong);
+}
+
 @media (max-width: 1120px) {
   body[data-page="explorer"] .explorer-hero,
   body[data-page="house"] .house-intro {
@@ -515,6 +600,24 @@ body[data-page="house"]
     flex-direction: column;
     gap: 10px;
     margin-top: 24px;
+  }
+
+  body[data-page="explorer"] .advanced-toggle {
+    min-height: 0;
+    padding: 18px 16px;
+  }
+
+  body[data-page="explorer"] .advanced-toggle-copy > strong {
+    font-size: 1.3rem;
+  }
+
+  body[data-page="explorer"] .advanced-toggle-copy > span {
+    font-size: 0.78rem;
+  }
+
+  body[data-page="explorer"] #paperFigures.paper-figures-chapter {
+    margin-top: 38px;
+    padding-top: 30px;
   }
 
   body[data-page="explorer"] .hero-action,
